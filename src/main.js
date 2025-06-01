@@ -4,7 +4,6 @@ import { RenderPass } from "/node_modules/three/examples/jsm/postprocessing/Rend
 import { UnrealBloomPass } from "/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 
-
 // renderer
 let scene, camera, renderer;
 const canvas = document.querySelector("canvas");
@@ -22,7 +21,7 @@ renderer = new THREE.WebGLRenderer({
 });
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;      
+controls.enableDamping = true;      // smooth camera motion
 controls.dampingFactor = 0.05;
 controls.enablePan = true;
 
@@ -93,12 +92,8 @@ window.addEventListener("resize", () => {
 
 
 function animate() {
-  controls.update();
-
   requestAnimationFrame(animate);
-
-  galaxyMesh.rotation.y += 0.001;
-
+  controls.update()
   camera.layers.set(1); 
   bloomComposer.render();
 }
