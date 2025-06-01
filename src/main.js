@@ -21,9 +21,10 @@ renderer = new THREE.WebGLRenderer({
 });
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;      // smooth camera motion
-controls.dampingFactor = 0.05;
+// controls.enableDamping = true;      
+// controls.dampingFactor = 0.05;
 controls.enablePan = true;
+
 
 renderer.autoClear = false;
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -66,17 +67,17 @@ const pointLight = new THREE.PointLight(0xffcc66, 1.5, 50);
 pointLight.position.set(0, 0, 0);
 scene.add(pointLight);
 
-const textureLoader = new THREE.TextureLoader();
-const galaxyTexture = textureLoader.load("texture/galaxy1.png");
-const galaxyGeometry = new THREE.SphereGeometry(80, 64, 64);
-const galaxyMaterial = new THREE.MeshBasicMaterial({
-  map: galaxyTexture,
-  side: THREE.BackSide,
-  transparent: true,
-});
-const galaxyMesh = new THREE.Mesh(galaxyGeometry, galaxyMaterial);
-galaxyMesh.layers.set(1); 
-scene.add(galaxyMesh);
+// const textureLoader = new THREE.TextureLoader();
+// const galaxyTexture = textureLoader.load("texture/galaxy1.png");
+// const galaxyGeometry = new THREE.SphereGeometry(80, 64, 64);
+// const galaxyMaterial = new THREE.MeshBasicMaterial({
+//   map: galaxyTexture,
+//   side: THREE.BackSide,
+//   transparent: true,
+// });
+// const galaxyMesh = new THREE.Mesh(galaxyGeometry, galaxyMaterial);
+// galaxyMesh.layers.set(1); 
+// scene.add(galaxyMesh);
 
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
@@ -93,7 +94,8 @@ window.addEventListener("resize", () => {
 
 function animate() {
   requestAnimationFrame(animate);
-  controls.update()
+  // galaxyMesh.rotation.y += 0.001;
+  controls.update();
   camera.layers.set(1); 
   bloomComposer.render();
 }
