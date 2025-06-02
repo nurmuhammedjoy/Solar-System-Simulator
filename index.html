@@ -1,19 +1,29 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" /> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Solar system simulator</title>
+    <meta charset="UTF-8" />
+    <title>3D Solar System</title>
     <style>
-    body { margin: 0; overflow: hidden; }
-      ranvas { display: block; }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: sans-serif;
+      }
+      #infoPanel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border-radius: 8px;
+        z-index: 10;
+        display: none;
+      }
     </style>
   </head>
   <body>
-    <div>
-        <canvas class="webgl"></canvas>
-    </div>I
-    <script type="module" src="/src/main.js"></script>
-
+    <div id="infoPanel"></div>
+    <script type="module" src="./index.js"></script>
   </body>
 </html>
