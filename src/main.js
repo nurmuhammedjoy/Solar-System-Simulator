@@ -49,7 +49,7 @@ export function init() {
 
 
   function earth(){
-     // Earth
+  // Earth
   const textureLoader = new THREE.TextureLoader();
   const earthTexture = textureLoader.load(textures.Earth);
   const earth = new THREE.Mesh(
@@ -58,18 +58,19 @@ export function init() {
   );
   earth.position.set(0, 0, 0);
   scene.add(earth);
+  // moom 
   }
   
   earth();
 
-  // Resize Handling
+  
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Animate
+ 
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
