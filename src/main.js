@@ -4,39 +4,18 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { getFresnelMat } from './getFresnelMat';
 
-const textures = {
-  Earth: '/texture/8081_earthmap4k.jpg',
-  Mars: '/texture/mars_1k_color.jpg',
-  earthNight: '/texture/8081_earthlights4k.jpg',
-  earthCloudtxt: 'texture/8081_earthhiresclouds4K.png',
-  moonTxt: 'texture/moonmap4k.jpg',
-  moonBumptxt: 'texture/07_moonbump4k.jpg'
-};
-
-const objectInfoMap = new Map([
-  ['Earth', {
-    title: 'Earth',
-    description: 'Earth is the third planet from the Sun and the only astronomical object known to harbor life.'
-  }],
-  ['Moon', {
-    title: 'Moon',
-    description: 'The Moon is Earth\'s only natural satellite and the fifth largest satellite in the Solar System.'
-  }]
-]);
-
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 camera.position.set(0, 100, 300);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
 labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.top = '0px';
+labelRenderer.domElement.style.top = '0';
 labelRenderer.domElement.style.pointerEvents = 'none';
 document.body.appendChild(labelRenderer.domElement);
 
@@ -45,70 +24,81 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.02));
-const pointLight = new THREE.DirectionalLight(0xffffff, 0.7);
-pointLight.position.set(1, -0.5, 0);
-pointLight.castShadow = true;
-scene.add(pointLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+dirLight.position.set(1, -0.5, 2);
+scene.add(dirLight);
 
-function loadStars() {
-  const starGeo = new THREE.BufferGeometry();
-  const starCount = 4000;
-  const starPos = [];
-  for (let i = 0; i < starCount; i++) {
-    starPos.push((Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000);
-  }
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 }));
-  scene.add(stars);
+function addStars(count = 4000, range = 2000) {
+  const geometry = new THREE.BufferGeometry();
+  const positions = Array.from({ length: count * 3 }, () => (Math.random() - 0.5) * range);
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+  scene.add(new THREE.Points(geometry, material));
 }
-loadStars();
+addStars();
+
+const textures = {
+  Earth: '/texture/8081_earthmap4k.jpg',
+  Mars: '/texture/mars_1k_color.jpg',
+  earthNight: '/texture/8081_earthlights4k.jpg',
+  earthCloudtxt: 'texture/8081_earthhiresclouds4K.png',
+  moonTxt: 'texture/moonmap4k.jpg',
+  moonBumptxt: 'texture/07_moonbump4k.jpg',
+  mercury: 'texture/mercury.jpg',
+};
+
+const objectInfo = new Map([
+  ['Earth', {
+    title: 'Earth',
+    description: 'Earth is the third planet from the Sun and the only astronomical object known to harbor life.'
+  }],
+  ['Moon', {
+    title: 'Moon',
+    description: 'The Moon is Earth\'s only natural satellite and the fifth largest satellite in the Solar System.'
+  }],
+  ['Mercury', {
+    title: 'Mercury',
+    description: 'Mercury is the first planet from the Sun. It is a rocky planet with a trace atmosphere. While it is the smallest and least massive planet of the Solar System, its surface gravity is slightly higher than that of Mars.'
+  }],
+
+  
+]);
 
 const raycaster = new THREE.Raycaster();
-const raycastableObjects = [];
+const raycastable = [];
 let earthGroup;
 
-function addAxisLabel(labelText, position) {
-  const labelDiv = document.createElement('div');
-  labelDiv.textContent = labelText;
-  labelDiv.style.color = 'white';
-  labelDiv.style.fontSize = '12px';
-  const label = new CSS2DObject(labelDiv);
-  label.position.copy(position);
-  scene.add(label);
+function createLabel(text, offset) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  div.style.color = 'white';
+  const label = new CSS2DObject(div);
+  label.position.copy(offset);
+  return label;
 }
 
-function earth() {
+function createEarth() {
   if (earthGroup) return;
 
-  earthGroup = new THREE.Group();
   const loader = new THREE.TextureLoader();
   const geometry = new THREE.IcosahedronGeometry(7, 16);
+  const earthMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.Earth) });
+  const cityMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.earthNight), blending: THREE.AdditiveBlending, transparent: true });
+  const cloudMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.earthCloudtxt), blending: THREE.AdditiveBlending, transparent: true });
 
-  const earthMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: loader.load(textures.Earth) }));
-  earthMesh.name = 'Earth';
-  earthMesh.castShadow = true;
-  earthMesh.receiveShadow = true;
+  const earth = new THREE.Mesh(geometry, earthMat);
+  earth.name = 'Earth';
+  const city = new THREE.Mesh(geometry.clone(), cityMat);
+  const clouds = new THREE.Mesh(geometry.clone(), cloudMat);
+  const glow = new THREE.Mesh(geometry.clone(), getFresnelMat());
+  glow.scale.setScalar(1.01);
 
-  const cityMesh = new THREE.Mesh(geometry.clone(), new THREE.MeshStandardMaterial({
-    map: loader.load(textures.earthNight), blending: THREE.AdditiveBlending, transparent: true
-  }));
+  earth.add(createLabel('Earth', new THREE.Vector3(-5, 11, 0)));
+  raycastable.push(earth);
 
-  const cloudMesh = new THREE.Mesh(geometry.clone(), new THREE.MeshStandardMaterial({
-    map: loader.load(textures.earthCloudtxt), blending: THREE.AdditiveBlending, transparent: true
-  }));
-
-  const glowMesh = new THREE.Mesh(geometry.clone(), getFresnelMat());
-  glowMesh.scale.set(1.01, 1.01, 1.01);
-
-  const labelDiv = document.createElement('div');
-  labelDiv.textContent = 'Earth';
-  labelDiv.style.color = 'white';
-  const label = new CSS2DObject(labelDiv);
-  label.position.set(-5, 11, 0);
-  earthMesh.add(label);
-
-  earthGroup.rotation.z = -23.4 * Math.PI / 180; // Tilt
-  earthGroup.add(earthMesh, cityMesh, cloudMesh, glowMesh);
+  earthGroup = new THREE.Group();
+  earthGroup.rotation.z = -23.4 * Math.PI / 180;
+  earthGroup.add(earth, city, clouds, glow);
   scene.add(earthGroup);
 
   const moonGroup = new THREE.Group();
@@ -123,88 +113,68 @@ function earth() {
   );
   moon.name = 'Moon';
   moon.position.set(50, 0, 0);
-  moon.castShadow = true;
-  moon.receiveShadow = true;
-
-  const moonLabel = new CSS2DObject(document.createElement('div'));
-  moonLabel.element.textContent = 'Moon';
-  moonLabel.element.style.color = 'white';
-  moonLabel.position.set(0, 3, 0);
-  moon.add(moonLabel);
-
+  moon.add(createLabel('Moon', new THREE.Vector3(0, 3, 0)));
   moonGroup.add(moon);
+  raycastable.push(moon);
 
-  const orbitGeo = new THREE.BufferGeometry();
-  const orbitPoints = [];
-  const r = 100, segments = 64;
-  for (let i = 0; i <= segments; i++) {
-    const theta = (i / segments) * 2 * Math.PI;
-    orbitPoints.push(Math.cos(theta) * r, 0, Math.sin(theta) * r);
+  const orbitPoints = [], a = 100, b = 80, seg = 200;
+  for (let i = 0; i <= seg; i++) {
+    const t = (i / seg) * Math.PI * 2;
+    orbitPoints.push(a * Math.cos(t), 0, b * Math.sin(t));
   }
-  orbitGeo.setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
+  const orbitGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
   moonGroup.add(new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ color: 0xffffff })));
-
-  raycastableObjects.push(earthMesh, moon);
 }
-earth();
+// createEarth();
+function createMercury() {
+  const loader = new THREE.TextureLoader();
 
-// addAxisLabel('X', new THREE.Vector3(20, 0, 0));
-// addAxisLabel('Y', new THREE.Vector3(0, 20, 0));
-// addAxisLabel('Z', new THREE.Vector3(0, 0, 20));
+  const geometry = new THREE.IcosahedronGeometry(3, 16);
+  const mercuryMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.mercury) });
 
-// function handleRaycast(x, y) {
-//   const coords = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
-//   raycaster.setFromCamera(coords, camera);
-//   const intersects = raycaster.intersectObjects(raycastableObjects, true);
-//   if (intersects.length > 0) focusOnObject(intersects[0].object);
-//   else document.getElementById('info-panel').style.display = 'none';
-// }
+  const mercury = new THREE.Mesh(geometry, mercuryMat);
+  mercury.name = 'Mercury';
+  mercury.position.set(0, 0, 0); 
+  // mercury.rotation.z = 
 
-let hidePanelTimeout = null;
+  mercury.add(createLabel('Mercury', new THREE.Vector3(0, 5, 0)));
 
+  raycastable.push(mercury);
+  scene.add(mercury);
+}
+
+// createMercury() 
+
+let hideInfoTimeout = null;
 function handleRaycast(x, y) {
-  const coords = new THREE.Vector2(
-    (x / renderer.domElement.clientWidth) * 2 - 1,
-    -(y / renderer.domElement.clientHeight) * 2 + 1
-  );
-  raycaster.setFromCamera(coords, camera);
-  const intersections = raycaster.intersectObjects(raycastableObjects, true);
+  const mouse = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(mouse, camera);
+  const [hit] = raycaster.intersectObjects(raycastable, true);
 
-  if (intersections.length > 0) {
-    const selected = intersections[0].object;
-    focusOnObject(selected);
-
-    // If object has info, clear the timeout to avoid premature hiding
-    const name = selected.name || selected.parent?.name;
-    if (objectInfoMap.has(name)) {
-      clearTimeout(hidePanelTimeout);
-    }
+  if (hit) {
+    focusOn(hit.object);
+    clearTimeout(hideInfoTimeout);
   } else {
-    // Delay hiding the info panel for 10 seconds
-    clearTimeout(hidePanelTimeout);
-    hidePanelTimeout = setTimeout(() => {
-      document.getElementById('info-panel').style.display = 'none';
-    }, 5000);
+    clearTimeout(hideInfoTimeout);
+    hideInfoTimeout = setTimeout(() => document.getElementById('info-panel').style.display = 'none', 10000);
   }
 }
 
-
-function focusOnObject(object) {
-  const target = new THREE.Vector3();
-  object.getWorldPosition(target);
-  const direction = new THREE.Vector3().subVectors(camera.position, target).normalize();
-  const newPos = target.clone().add(direction.multiplyScalar(50));
-  camera.position.copy(newPos);
-  controls.target.copy(target);
-  controls.update();
-
+function focusOn(object) {
   const name = object.name || object.parent?.name;
-  const info = objectInfoMap.get(name);
-  if (info) {
-    document.getElementById('info-title').textContent = info.title;
-    document.getElementById('info-description').textContent = info.description;
-    document.getElementById('info-panel').style.display = 'block';
-  }
+  const info = objectInfo.get(name);
+  if (!info) return;
+
+  const pos = new THREE.Vector3();
+  object.getWorldPosition(pos);
+  const dir = new THREE.Vector3().subVectors(camera.position, pos).normalize();
+  camera.position.copy(pos.clone().add(dir.multiplyScalar(50)));
+  controls.target.copy(pos);
+
+  const panel = document.getElementById('info-panel');
+  panel.querySelector('#info-title').textContent = info.title;
+  panel.querySelector('#info-description').textContent = info.description;
+  panel.style.display = 'block';
 }
 
 window.addEventListener('resize', () => {
@@ -214,12 +184,9 @@ window.addEventListener('resize', () => {
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-window.addEventListener('touchstart', (e) => {
-  if (e.touches.length === 1) handleRaycast(e.touches[0].clientX, e.touches[0].clientY);
-});
-window.addEventListener('click', (e) => {
-  handleRaycast(e.clientX, e.clientY);
-});
+window.addEventListener('click', e => handleRaycast(e.clientX, e.clientY));
+window.addEventListener('touchstart', e => handleRaycast(e.touches[0].clientX, e.touches[0].clientY));
+
 const infoPanel = document.createElement('div');
 infoPanel.id = 'info-panel';
 // infoPanel.style = 'position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.8);color:white;padding:10px;border-radius:10px;max-width:250px;font-family:sans-serif;display:none;z-index:999;';
@@ -228,19 +195,17 @@ document.body.appendChild(infoPanel);
 
 function animate() {
   requestAnimationFrame(animate);
+
   if (earthGroup) {
-    earthGroup.rotation.y += 0.0002;
+    earthGroup.rotation.y += 0.00002;
     const moon = earthGroup.getObjectByName('Moon');
     if (moon) {
-    const time = Date.now() * 0.00001; // Speed of orbit
-    const radius = 100;
-    moon.position.set(
-    Math.cos(time) * radius,
-    0,
-    Math.sin(time) * radius
-  );
-}
+      const time = Date.now() * 0.000005;
+      const a = 100, b = 80;
+      moon.position.set(a * Math.cos(time), 0, b * Math.sin(time));
+    }
   }
+
   controls.update();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
