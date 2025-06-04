@@ -7,7 +7,7 @@ const textures = {
   Mars: '/texture/mars_1k_color.jpg'
 };
 
-export function init() {
+// export function init() {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
   camera.position.set(0, 100, 300);
@@ -30,7 +30,7 @@ export function init() {
   controls.dampingFactor = 0.05;
 
   // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.1));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.05));
   const pointLight = new THREE.DirectionalLight(0xffffff, 1);
   pointLight.position.set(100, 0, 50);
   pointLight.castShadow = true;
@@ -62,7 +62,6 @@ export function init() {
 
   function earth() {
     earthGroup = new THREE.Group();
-
     const textureLoader = new THREE.TextureLoader();
     const earthTexture = textureLoader.load(textures.Earth);
     const earth = new THREE.Mesh(
@@ -72,29 +71,27 @@ export function init() {
     earth.position.set(0, 0, 0);
     earth.castShadow = true;
     earth.receiveShadow = true;
-
-    // Label
     const earthLabelDiv = document.createElement('div');
     earthLabelDiv.className = 'label';
     earthLabelDiv.textContent = 'Earth';
     earthLabelDiv.style.marginTop = '-1em';
     earthLabelDiv.style.color = 'white';
-    earthLabelDiv.style.background = 'rgba(0, 0, 0, 0.5)';
+    // earthLabelDiv.style.background = 'rgba(0, 0, 0, 0.5)';
     earthLabelDiv.style.padding = '2px 6px';
     earthLabelDiv.style.borderRadius = '4px';
     earthLabelDiv.style.fontFamily = 'Arial, sans-serif';
     earthLabelDiv.style.fontSize = '14px';
-
     const earthLabel = new CSS2DObject(earthLabelDiv);
     earthLabel.position.set(-5, 11, 0);
     earth.add(earthLabel);
-
+    // b~~~
     earthGroup.rotation.z = -23.4 * Math.PI / 180;
     earthGroup.add(earth);
     scene.add(earthGroup);
   }
+  document.getElementById('load-earth').addEventListener('click', earth);
 
-  earth();
+  // earth();
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -104,14 +101,15 @@ export function init() {
   });
 
   function animate() {
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
+    if (earthGroup) {
+    earthGroup.rotation.y += 0.002;
+   }
+    controls.update();
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+}
 
-    earthGroup.rotation.y += 0.001;
-
-    controls.update();
-    renderer.render(scene, camera);
-    labelRenderer.render(scene, camera);
-  }
 
   animate();
-}
+// }
