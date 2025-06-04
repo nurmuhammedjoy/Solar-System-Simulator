@@ -2,11 +2,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-
+import { getFresnelMat } from './getFresnelMat';
 const textures = {
   Earth: '/texture/8081_earthmap4k.jpg',
   Mars: '/texture/mars_1k_color.jpg',
   earthNight: '/texture/8081_earthlights4k.jpg',
+  earthCloudtxt: 'texture/8081_earthhiresclouds4K.png'
 };
 
 const scene = new THREE.Scene();
@@ -31,8 +32,8 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 // Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.05));
-const pointLight = new THREE.DirectionalLight(0xffffff, 1);
+scene.add(new THREE.AmbientLight(0xffffff, 0.02));
+const pointLight = new THREE.DirectionalLight(0xffffff, 0.7);
 pointLight.position.set(-2, -0.5, 0);
 pointLight.castShadow = true;
 pointLight.shadow.mapSize.height = 1024;
@@ -67,7 +68,7 @@ function earth() {
  earthGroup = new THREE.Group();
  const textureLoader = new THREE.TextureLoader();
  const earthTexture = textureLoader.load(textures.Earth);
- const geometry = new THREE.SphereGeometry(10, 32, 32);
+ const geometry = new THREE.IcosahedronGeometry(7, 16);
 
  const earth = new THREE.Mesh(
   geometry,
@@ -78,10 +79,10 @@ function earth() {
  earth.receiveShadow = true;
  const earthCitylight = textureLoader.load(textures.earthNight)
  const cityLighting = new THREE.MeshStandardMaterial({
-//   color: 0xe303fc,
-//   emissive: 0xe303fc,
-//   emissiveIntensity: 0.5,
-//   transparent: true,
+ //   color: 0xe303fc,
+ //   emissive: 0xe303fc,
+ //   emissiveIntensity: 0.5,
+ //   transparent: true,
 //   opacity: 0.3
  map: earthCitylight,
  blending: THREE.AdditiveBlending
@@ -90,6 +91,24 @@ function earth() {
  const cityLightingMesh = new THREE.Mesh(geometry.clone(), cityLighting);
 //  cityLightingMesh.scale.set(1.001, 1.001, 1.001); 
  earthGroup.add(cityLightingMesh);
+
+//
+  const earthCloudtxt = textureLoader.load(textures.earthCloudtxt)
+  const earthCloud = new THREE.MeshStandardMaterial({
+
+  map: earthCloudtxt,
+  blending: THREE.AdditiveBlending
+
+  });
+  const earthCloudMesh = new THREE.Mesh(geometry.clone(), earthCloud);
+//  earthCloudMesh.scale.set()
+  earthGroup.add(earthCloudMesh);
+
+  const earthGlow = getFresnelMat();
+  const earthGlowMesh = new THREE.Mesh(geometry.clone(), earthGlow);
+  earthGlowMesh.scale.set(1.01, 1.01, 1.01); // Apply scale to the mesh, not material
+  earthGroup.add(earthGlowMesh);
+
  
   const earthLabelDiv = document.createElement('div');
   earthLabelDiv.className = 'label';
