@@ -1,1 +1,2 @@
 # project
+For school project 
