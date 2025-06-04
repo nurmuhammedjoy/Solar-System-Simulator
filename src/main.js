@@ -8,7 +8,8 @@ const textures = {
   Mars: '/texture/mars_1k_color.jpg',
   earthNight: '/texture/8081_earthlights4k.jpg',
   earthCloudtxt: 'texture/8081_earthhiresclouds4K.png',
-  moonTxt: 'texture/moonmap4k.jpg'
+  moonTxt: 'texture/moonmap4k.jpg',
+  moonBumptxt: 'texture/07_moonbump4k.jpg'
 };
 
 const scene = new THREE.Scene();
@@ -114,10 +115,16 @@ function earth() {
   const moonOrbitGroup = new THREE.Group();
   earthGroup.add(moonOrbitGroup);
 
+  const moonBump = textureLoader.load(textures.moonBumptxt)
   const moonTexture = textureLoader.load(textures.moonTxt);
   const moon = new THREE.Mesh(
     new THREE.SphereGeometry(2, 32, 32),
-    new THREE.MeshStandardMaterial({ map: moonTexture })
+    new THREE.MeshStandardMaterial({ 
+      map: moonTexture,
+      bumpMap: moonBump,
+      bumpScale: 0.5,
+
+      })
   );
   moon.position.set(50, 0, 0);
   moon.castShadow = true;
