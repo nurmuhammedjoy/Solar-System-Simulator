@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { getFresnelMat } from './getFresnelMat';
+import { getVenusFresnelMat } from './getVenusFresnelMat';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
@@ -45,6 +46,9 @@ const textures = {
   moonTxt: 'texture/moonmap4k.jpg',
   moonBumptxt: 'texture/07_moonbump4k.jpg',
   mercury: 'texture/mercury.jpg',
+  venus: 'texture/8k_venus_surface.jpg',
+  venusatmosphere: 'texture/4k_venus_atmosphere.jpg',
+
 };
 
 const objectInfo = new Map([
@@ -59,6 +63,10 @@ const objectInfo = new Map([
   ['Mercury', {
     title: 'Mercury',
     description: 'Mercury is the first planet from the Sun. It is a rocky planet with a trace atmosphere. While it is the smallest and least massive planet of the Solar System, its surface gravity is slightly higher than that of Mars.'
+  }],
+  ['Venus', {
+    title: 'Venus',
+    description: 'he Sun. It is a ocky planet with a trace atmosphere. While it is the smallest and least massive planet of the Solar System, its surface gravity is slightly higher than that of Mars.'
   }],
 
   
@@ -126,24 +134,58 @@ function createEarth() {
   moonGroup.add(new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ color: 0xffffff })));
 }
 // createEarth();
+let mercury, venus;
 function createMercury() {
   const loader = new THREE.TextureLoader();
 
   const geometry = new THREE.IcosahedronGeometry(3, 16);
   const mercuryMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.mercury) });
 
-  const mercury = new THREE.Mesh(geometry, mercuryMat);
+  mercury = new THREE.Mesh(geometry, mercuryMat); 
   mercury.name = 'Mercury';
-  mercury.position.set(0, 0, 0); 
-  // mercury.rotation.z = 
-
+  mercury.position.set(-40, 0, 0); 
   mercury.add(createLabel('Mercury', new THREE.Vector3(0, 5, 0)));
 
   raycastable.push(mercury);
   scene.add(mercury);
 }
 
-// createMercury() 
+function createVenus() {
+  const loader = new THREE.TextureLoader();
+
+  const geometry = new THREE.IcosahedronGeometry(3, 16);
+  const venusMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.venus) });
+
+  venus = new THREE.Mesh(geometry, venusMat);
+  venus.name = 'Venus';
+  venus.position.set(0, 0, 0);
+  const atmosphereGeo = geometry.clone();
+  const atmosphereMat = new THREE.MeshStandardMaterial({
+    map: loader.load(textures.venusatmosphere),
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
+  atmosphere.scale.setScalar(1);
+
+//   const glow = new THREE.Mesh(geometry.clone(), getVenusFresnelMat());
+//  glow.scale.setScalar(1.009);
+ const venusGroup = new THREE.Group();
+ venusGroup.add(venus);
+ venusGroup.add(atmosphere);
+//  venusGroup.add(glow);
+ venusGroup.rotation.z = THREE.MathUtils.degToRad(177.4);
+
+ venus.add(createLabel('Venus', new THREE.Vector3(0, -4, 0)));
+ raycastable.push(venus);
+  scene.add(venusGroup);
+}
+
+
+// createVenus()
+
 
 let hideInfoTimeout = null;
 function handleRaycast(x, y) {
@@ -175,6 +217,7 @@ function focusOn(object) {
   panel.querySelector('#info-title').textContent = info.title;
   panel.querySelector('#info-description').textContent = info.description;
   panel.style.display = 'block';
+ 
 }
 
 window.addEventListener('resize', () => {
@@ -204,6 +247,13 @@ function animate() {
       const a = 100, b = 80;
       moon.position.set(a * Math.cos(time), 0, b * Math.sin(time));
     }
+  } 
+  if (mercury) {
+     mercury.rotation.z = THREE.MathUtils.degToRad(0.03);
+
+  }
+  if (venus) {
+    venus.parent.rotation.y -= 0.0001;
   }
 
   controls.update();
