@@ -27,7 +27,7 @@ Currently under development and optimized for low-resource environments like **T
 ## 🛠️ Setup
 
 ```bash
-# Github CLI ()
+# Github CLI (generally fast)
 gh repo clone nurmuhammedjoy/project
 
 # or
