@@ -27,6 +27,15 @@ Currently under development and optimized for low-resource environments like **T
 ## 🛠️ Setup
 
 ```bash
+# Github CLI
+gh repo clone nurmuhammedjoy/project
+
+# SSH
+git@github.com:nurmuhammedjoy/project.git
+
+# HTTPS
+https://github.com/nurmuhammedjoy/project.git
+
 # Install dependencies
 npm install
 
