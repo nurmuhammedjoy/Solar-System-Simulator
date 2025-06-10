@@ -34,7 +34,7 @@ gh repo clone nurmuhammedjoy/project
 git@github.com:nurmuhammedjoy/project.git
 
 # HTTPS
-https://github.com/nurmuhammedjoy/project.git
+git clone https://github.com/nurmuhammedjoy/project.git
 
 # Install dependencies
 npm install
