@@ -27,14 +27,16 @@ Currently under development and optimized for low-resource environments like **T
 ## 🛠️ Setup
 
 ```bash
-# Github CLI
+# Github CLI ()
 gh repo clone nurmuhammedjoy/project
 
-# SSH
-git@github.com:nurmuhammedjoy/project.git
+# or
 
 # HTTPS
 git clone https://github.com/nurmuhammedjoy/project.git
+
+# Open the folder 
+cd Solar-System-Simulator
 
 # Install dependencies
 npm install
