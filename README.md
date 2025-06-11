@@ -29,12 +29,13 @@ Currently under development and optimized for low-resource environments like **T
 ```bash
 # Github CLI (generally fast)
 gh repo clone nurmuhammedjoy/project
-
+```
 # or
-
+```bash
 # HTTPS
 git clone https://github.com/nurmuhammedjoy/project.git
-
+```
+```bash
 # Open the folder 
 cd Solar-System-Simulator
 
