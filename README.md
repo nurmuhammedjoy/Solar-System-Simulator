@@ -5,7 +5,7 @@ Currently under development and optimized for low-resource environments like **T
 
 ## 🚀 Features
 
-- Basic 3D solar system scene
+- Basic 3D solar system scene with 8k texture 
 - Four planets added for performance (Mercury, Venus, Earth, Mars)
 - Clickable planets (planned: focus/zoom + info panel)
 - OrbitControls for smooth camera movement
