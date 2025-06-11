@@ -24,17 +24,20 @@ Currently under development and optimized for low-resource environments like **T
   - **Three.js** being a large/heavy library and hitting memory or CPU constraints.
   
 
-## 🛠️ Setup
+## Download 
 
 ```bash
 # Github CLI (generally fast)
 gh repo clone nurmuhammedjoy/project
 ```
 # or
+
 ```bash
 # HTTPS
 git clone https://github.com/nurmuhammedjoy/project.git
 ```
+## 🛠️ Setup
+
 ```bash
 # Open the folder 
 cd Solar-System-Simulator
