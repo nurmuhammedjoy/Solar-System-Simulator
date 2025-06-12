@@ -23,6 +23,7 @@ Currently under development and optimized for low-resource environments like **T
   - Running in **Termux**, which may have limitations (especially around filesystem, Node.js, or networking).
   - **Three.js** being a large/heavy library and hitting memory or CPU constraints.
   
+  
 
 ## Download 
 
@@ -47,7 +48,4 @@ npm install
 
 # Start dev server
 npm run dev
-
-# OR build and preview
-npm run build
-npm run preview
+```
