@@ -14,7 +14,8 @@ Currently under development and optimized for low-resource environments like **T
 
 - [Three.js](https://threejs.org/) – for rendering the 3D scene
 - [Vite](https://vitejs.dev/) – for fast development server and bundling
-- Native Termux + proot (optional)
+- Termux in android
+- node.js
 
 ## ⚠️ Issues
 
@@ -22,6 +23,7 @@ Currently under development and optimized for low-resource environments like **T
   Unsure if this is due to:
   - Running in **Termux**, which may have limitations (especially around filesystem, Node.js, or networking).
   - **Three.js** being a large/heavy library and hitting memory or CPU constraints.
+  
   
   
 
