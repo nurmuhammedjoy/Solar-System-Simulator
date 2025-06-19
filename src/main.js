@@ -1,42 +1,10 @@
-// main.js
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import { getFresnelMat } from './getFresnelMat';
-import { getVenusFresnelMat } from './getVenusFresnelMat';
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(0, 100, 300);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-const labelRenderer = new CSS2DRenderer();
-labelRenderer.setSize(window.innerWidth, window.innerHeight);
-labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.top = '0';
-labelRenderer.domElement.style.pointerEvents = 'none';
-document.body.appendChild(labelRenderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-
-scene.add(new THREE.AmbientLight(0xffffff, 0.02));
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-dirLight.position.set(1, -0.5, 2);
-scene.add(dirLight);
-
-function addStars(count = 4000, range = 2000) {
-  const geometry = new THREE.BufferGeometry();
-  const positions = Array.from({ length: count * 3 }, () => (Math.random() - 0.5) * range);
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
-  scene.add(new THREE.Points(geometry, material));
-}
-addStars();
+let sun, corona, particles;
+let animationSpeed = 1;
+let glowIntensity = 1.5;
+let coronaSize = 1.8;
 
 const textures = {
   Earth: '/texture/8081_earthmap4k.jpg',
@@ -48,216 +16,227 @@ const textures = {
   mercury: 'texture/mercury.jpg',
   venus: 'texture/8k_venus_surface.jpg',
   venusatmosphere: 'texture/4k_venus_atmosphere.jpg',
-
+  star: 'texture/circle.png'
 };
 
-const objectInfo = new Map([
-  ['Earth', {
-    title: 'Earth',
-    description: 'Earth is the third planet from the Sun and the only astronomical object known to harbor life.'
-  }],
-  ['Moon', {
-    title: 'Moon',
-    description: 'The Moon is Earth\'s only natural satellite and the fifth largest satellite in the Solar System.'
-  }],
-  ['Mercury', {
-    title: 'Mercury',
-    description: 'Mercury is the first planet from the Sun. It is a rocky planet with a trace atmosphere. While it is the smallest and least massive planet of the Solar System, its surface gravity is slightly higher than that of Mars.'
-  }],
-  ['Venus', {
-    title: 'Venus',
-    description: 'he Sun. It is a ocky planet with a trace atmosphere. While it is the smallest and least massive planet of the Solar System, its surface gravity is slightly higher than that of Mars.'
-  }],
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 10, 30);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-  
-]);
+const controls = new OrbitControls(camera, renderer.domElement);
 
-const raycaster = new THREE.Raycaster();
-const raycastable = [];
-let earthGroup;
+function createSun() {
+  const geometry = new THREE.SphereGeometry(2, 64, 64);
 
-function createLabel(text, offset) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  div.style.color = 'white';
-  const label = new CSS2DObject(div);
-  label.position.copy(offset);
-  return label;
-}
+  const sunMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+      glowIntensity: { value: glowIntensity }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      varying vec2 vUv;
+      uniform float time;
 
-function createEarth() {
-  if (earthGroup) return;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = position;
+        vUv = uv;
 
-  const loader = new THREE.TextureLoader();
-  const geometry = new THREE.IcosahedronGeometry(7, 16);
-  const earthMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.Earth) });
-  const cityMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.earthNight), blending: THREE.AdditiveBlending, transparent: true });
-  const cloudMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.earthCloudtxt), blending: THREE.AdditiveBlending, transparent: true });
+        vec3 pos = position;
+        float noise = sin(pos.x * 3.0 + time) * cos(pos.y * 3.0 + time * 0.7) * sin(pos.z * 3.0 + time * 0.3) * 0.05;
+        pos += normal * noise;
 
-  const earth = new THREE.Mesh(geometry, earthMat);
-  earth.name = 'Earth';
-  const city = new THREE.Mesh(geometry.clone(), cityMat);
-  const clouds = new THREE.Mesh(geometry.clone(), cloudMat);
-  const glow = new THREE.Mesh(geometry.clone(), getFresnelMat());
-  glow.scale.setScalar(1.01);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      varying vec2 vUv;
+      uniform float time;
+      uniform float glowIntensity;
 
-  earth.add(createLabel('Earth', new THREE.Vector3(-5, 11, 0)));
-  raycastable.push(earth);
+      void main() {
+        vec3 sunColor = vec3(1.0, 0.6, 0.1);
+        vec3 hotColor = vec3(1.0, 0.9, 0.3);
 
-  earthGroup = new THREE.Group();
-  earthGroup.rotation.z = -23.4 * Math.PI / 180;
-  earthGroup.add(earth, city, clouds, glow);
-  scene.add(earthGroup);
+        float pattern = sin(vUv.x * 20.0 + time) * cos(vUv.y * 15.0 + time * 0.7);
+        pattern += sin(vUv.x * 30.0 - time * 0.5) * cos(vUv.y * 25.0 - time * 0.3) * 0.5;
+        pattern = pattern * 0.3 + 0.7;
 
-  const moonGroup = new THREE.Group();
-  earthGroup.add(moonGroup);
+        vec3 finalColor = mix(sunColor, hotColor, pattern);
 
-  const moon = new THREE.Mesh(
-    new THREE.SphereGeometry(2, 32, 32),
-    new THREE.MeshStandardMaterial({
-      map: loader.load(textures.moonTxt),
-      bumpMap: loader.load(textures.moonBumptxt), bumpScale: 0.5
-    })
-  );
-  moon.name = 'Moon';
-  moon.position.set(50, 0, 0);
-  moon.add(createLabel('Moon', new THREE.Vector3(0, 3, 0)));
-  moonGroup.add(moon);
-  raycastable.push(moon);
+        float fresnel = 1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0));
+        fresnel = pow(fresnel, 2.0);
+        finalColor += vec3(1.0, 0.5, 0.0) * fresnel * glowIntensity;
 
-  const orbitPoints = [], a = 100, b = 80, seg = 200;
-  for (let i = 0; i <= seg; i++) {
-    const t = (i / seg) * Math.PI * 2;
-    orbitPoints.push(a * Math.cos(t), 0, b * Math.sin(t));
-  }
-  const orbitGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
-  moonGroup.add(new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ color: 0xffffff })));
-}
-// createEarth();
-let mercury, venus;
-function createMercury() {
-  const loader = new THREE.TextureLoader();
-
-  const geometry = new THREE.IcosahedronGeometry(3, 16);
-  const mercuryMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.mercury) });
-
-  mercury = new THREE.Mesh(geometry, mercuryMat); 
-  mercury.name = 'Mercury';
-  mercury.position.set(-40, 0, 0); 
-  mercury.add(createLabel('Mercury', new THREE.Vector3(0, 5, 0)));
-
-  raycastable.push(mercury);
-  scene.add(mercury);
-}
-
-function createVenus() {
-  const loader = new THREE.TextureLoader();
-
-  const geometry = new THREE.IcosahedronGeometry(3, 16);
-  const venusMat = new THREE.MeshStandardMaterial({ map: loader.load(textures.venus) });
-
-  venus = new THREE.Mesh(geometry, venusMat);
-  venus.name = 'Venus';
-  venus.position.set(0, 0, 0);
-  const atmosphereGeo = geometry.clone();
-  const atmosphereMat = new THREE.MeshStandardMaterial({
-    map: loader.load(textures.venusatmosphere),
-    transparent: true,
-    opacity: 0.9,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
+        gl_FragColor = vec4(finalColor, 1.0);
+      }
+    `
   });
-  const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
-  atmosphere.scale.setScalar(1);
 
-//   const glow = new THREE.Mesh(geometry.clone(), getVenusFresnelMat());
-//  glow.scale.setScalar(1.009);
- const venusGroup = new THREE.Group();
- venusGroup.add(venus);
- venusGroup.add(atmosphere);
-//  venusGroup.add(glow);
- venusGroup.rotation.z = THREE.MathUtils.degToRad(177.4);
-
- venus.add(createLabel('Venus', new THREE.Vector3(0, -4, 0)));
- raycastable.push(venus);
-  scene.add(venusGroup);
+  sun = new THREE.Mesh(geometry, sunMaterial);
+  scene.add(sun);
 }
 
+function createCorona() {
+  const geometry = new THREE.SphereGeometry(2 * coronaSize, 32, 32);
 
-// createVenus()
+  const coronaMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+      glowIntensity: { value: glowIntensity }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
 
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      uniform float time;
+      uniform float glowIntensity;
 
-let hideInfoTimeout = null;
-function handleRaycast(x, y) {
-  const mouse = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
-  raycaster.setFromCamera(mouse, camera);
-  const [hit] = raycaster.intersectObjects(raycastable, true);
+      void main() {
+        vec3 coronaColor = vec3(1.0, 0.4, 0.0);
 
-  if (hit) {
-    focusOn(hit.object);
-    clearTimeout(hideInfoTimeout);
-  } else {
-    clearTimeout(hideInfoTimeout);
-    hideInfoTimeout = setTimeout(() => document.getElementById('info-panel').style.display = 'none', 10000);
+        float fresnel = 1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0));
+        fresnel = pow(fresnel, 3.0);
+
+        float opacity = fresnel * 0.3 * glowIntensity;
+        opacity *= (sin(time * 2.0) * 0.2 + 0.8);
+
+        gl_FragColor = vec4(coronaColor, opacity);
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide
+  });
+
+  corona = new THREE.Mesh(geometry, coronaMaterial);
+  scene.add(corona);
+}
+
+function createParticles() {
+  const particleCount = 1000;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    const i3 = i * 3;
+
+    const radius = Math.random() * 20 + 10;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+
+    positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+    positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+    positions[i3 + 2] = radius * Math.cos(phi);
+
+    colors[i3] = 1.0;
+    colors[i3 + 1] = Math.random() * 0.5 + 0.3;
+    colors[i3 + 2] = Math.random() * 0.3;
   }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: 0.1,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending
+  });
+
+  particles = new THREE.Points(geometry, material);
+  scene.add(particles);
 }
 
-function focusOn(object) {
-  const name = object.name || object.parent?.name;
-  const info = objectInfo.get(name);
-  if (!info) return;
+const sunLight = new THREE.PointLight(0xffffff, 500, 200);
+sunLight.position.set(0, 0, 0);
+scene.add(sunLight);
 
-  const pos = new THREE.Vector3();
-  object.getWorldPosition(pos);
-  const dir = new THREE.Vector3().subVectors(camera.position, pos).normalize();
-  camera.position.copy(pos.clone().add(dir.multiplyScalar(50)));
-  controls.target.copy(pos);
+const earthGeo = new THREE.SphereGeometry(1, 32, 32);
+const earthMat = new THREE.MeshStandardMaterial({ color: 0x3D9BE9 });
+const earth = new THREE.Mesh(earthGeo, earthMat);
 
-  const panel = document.getElementById('info-panel');
-  panel.querySelector('#info-title').textContent = info.title;
-  panel.querySelector('#info-description').textContent = info.description;
-  panel.style.display = 'block';
- 
+const earthOrbit = new THREE.Object3D();
+earth.position.x = 15;
+earthOrbit.add(earth);
+scene.add(earthOrbit);
+
+function getStarfield(numStars = 5000) {
+  function randomSpherePoint() {
+    const radius = Math.random() * 50 + 50;
+    const theta = 5 * Math.PI * Math.random();
+    const phi = Math.acos(2 * Math.random() - 1);
+    return new THREE.Vector3(
+      radius * Math.sin(phi) * Math.cos(theta),
+      radius * Math.sin(phi) * Math.sin(theta),
+      radius * Math.cos(phi)
+    );
+  }
+
+  const verts = [];
+  const colors = [];
+
+  for (let i = 0; i < numStars; i++) {
+    const pos = randomSpherePoint();
+    verts.push(pos.x, pos.y, pos.z);
+    const col = new THREE.Color().setHSL(0.6, 0.2, Math.random());
+    colors.push(col.r, col.g, col.b);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.load(textures.star, (starTexture) => {
+    const mat = new THREE.PointsMaterial({
+      size: 0.2,
+      vertexColors: true,
+      map: starTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const stars = new THREE.Points(geo, mat);
+    scene.add(stars);
+  });
 }
+
+getStarfield(1000);
+createSun();
+createCorona();
+createParticles();
+
+function animate() {
+  requestAnimationFrame(animate);
+  earth.rotation.y += 0.02;
+  earthOrbit.rotation.y += 0.005;
+  if (sun && sun.material.uniforms.time) sun.material.uniforms.time.value += 0.01 * animationSpeed;
+  if (corona && corona.material.uniforms.time) corona.material.uniforms.time.value += 0.01 * animationSpeed;
+  renderer.render(scene, camera);
+}
+animate();
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  labelRenderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-window.addEventListener('click', e => handleRaycast(e.clientX, e.clientY));
-window.addEventListener('touchstart', e => handleRaycast(e.touches[0].clientX, e.touches[0].clientY));
-
-const infoPanel = document.createElement('div');
-infoPanel.id = 'info-panel';
-// infoPanel.style = 'position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.8);color:white;padding:10px;border-radius:10px;max-width:250px;font-family:sans-serif;display:none;z-index:999;';
-// infoPanel.innerHTML = '<h3 id="info-title"></h3><p id="info-description"></p>';
-document.body.appendChild(infoPanel);
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  if (earthGroup) {
-    earthGroup.rotation.y += 0.00002;
-    const moon = earthGroup.getObjectByName('Moon');
-    if (moon) {
-      const time = Date.now() * 0.000005;
-      const a = 100, b = 80;
-      moon.position.set(a * Math.cos(time), 0, b * Math.sin(time));
-    }
-  } 
-  if (mercury) {
-     mercury.rotation.z = THREE.MathUtils.degToRad(0.03);
-
-  }
-  if (venus) {
-    venus.parent.rotation.y -= 0.0001;
-  }
-
-  controls.update();
-  renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
-}
-animate();
