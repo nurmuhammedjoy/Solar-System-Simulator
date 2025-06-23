@@ -7,10 +7,21 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
+const fpsDisplay = document.createElement('div');
+fpsDisplay.style.position = 'absolute';
+fpsDisplay.style.top = '0';
+fpsDisplay.style.left = '0';
+fpsDisplay.style.color = 'lime';
+fpsDisplay.style.fontFamily = 'monospace';
+fpsDisplay.style.background = 'rgba(0,0,0,0.5)';
+fpsDisplay.style.padding = '5px';
+document.body.appendChild(fpsDisplay);
 
+let lastTime = performance.now();
+let frames = 0;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
 camera.position.set(0, 100, 300);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -28,8 +39,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.005));
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+scene.add(new THREE.AmbientLight(0xffffff, 0.05));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
 dirLight.position.set(500, 0, 67);
 scene.add(dirLight);
 function addStars(count = 4000, range = 2000) {
@@ -40,24 +51,39 @@ function addStars(count = 4000, range = 2000) {
   scene.add(new THREE.Points(geometry, material));
 }
 addStars();
-const sunGeo = new THREE.SphereGeometry(10, 64, 64);
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
-const sun = new THREE.Mesh(sunGeo, sunMat);
-scene.add(sun);
-sun.position.set(500, 0, 67);
 
-const renderScene = new RenderPass(scene, camera);
 
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.7,  
-  1,  
-  0.0
-);
-const composer = new EffectComposer(renderer);
-composer.addPass(renderScene);
-composer.addPass(bloomPass);
+// const sunGeo = new THREE.SphereGeometry(10, 64, 64);
+// const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+// const sun = new THREE.Mesh(sunGeo, sunMat);
+// scene.add(sun);
+// sun.position.set(500, 0, 67);
+// sun.layers.set(BLOOM_LAYER); 
+// const renderScene = new RenderPass(scene, camera);
+// const bloomPass = new UnrealBloomPass(
+//   new THREE.Vector2(window.innerWidth, window.innerHeight),
+//   0.7,  
+//   1,  
+//   0.0
+// );
+// const composer = new EffectComposer(renderer);
+// composer.addPass(renderScene);
+// composer.addPass(bloomPass);
 
+
+// function darkenNonBloomed(obj) {
+//   if (obj.isMesh && obj.layers.test(camera.layers) === false) {
+//     materials[obj.uuid] = obj.material;
+//     obj.material = darkMaterial;
+//   }
+// }
+
+// function restoreMaterials(obj) {
+//   if (materials[obj.uuid]) {
+//     obj.material = materials[obj.uuid];
+//     delete materials[obj.uuid];
+//   }
+// }
 
 const textures = {
   Earth: '/texture/8081_earthmap4k.jpg',
@@ -277,7 +303,18 @@ function animate() {
 
   controls.update();
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
-  composer.render();
+  // scene.traverse(darkenNonBloomed);
+  // camera.layers.set(BLOOM_LAYER); 
+  // bloomComposer.render();
+  // camera.layers.set(1); 
+  // scene.traverse(restoreMaterials);
+  const now = performance.now();
+  frames++;
+
+  if (now - lastTime >= 1000) {
+    fpsDisplay.textContent = `FPS: ${frames}`;
+    frames = 0;
+    lastTime = now;
+  }
 }
 animate();
