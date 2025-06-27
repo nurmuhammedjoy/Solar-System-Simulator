@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 2D Solar System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            border: 1px solid #333;
+            cursor: pointer;
+        }
+        
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+        }
+        
+        #info h3 {
+            margin: 0 0 10px 0;
+            color: #ffd700;
+        }
+        
+        .planet-info {
+            display: none;
+        }
+        
+        .planet-info.active {
+            display: block;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="1200" height="800"></canvas>
+    
+    <div id="info">
+        <h3>Interactive Solar System</h3>
+        <p>Click on any planet to learn more about it!</p>
+        
+        <div id="sun-info" class="planet-info">
+            <h3>Sun ☀️</h3>
+            <p>The center of our solar system. A massive ball of hot plasma that provides energy to all planets.</p>
+        </div>
+        
+        <div id="mercury-info" class="planet-info">
+            <h3>Mercury ☿️</h3>
+            <p>The smallest and innermost planet. It has extreme temperatures and no atmosphere.</p>
+        </div>
+        
+        <div id="venus-info" class="planet-info">
+            <h3>Venus ♀️</h3>
+            <p>The hottest planet due to its thick atmosphere. Often called Earth's twin.</p>
+        </div>
+        
+        <div id="earth-info" class="planet-info">
+            <h3>Earth 🌍</h3>
+            <p>Our home planet! The only known planet with life in the universe.</p>
+        </div>
+        
+        <div id="mars-info" class="planet-info">
+            <h3>Mars ♂️</h3>
+            <p>The Red Planet. Home to the largest volcano in the solar system, Olympus Mons.</p>
+        </div>
+        
+        <div id="jupiter-info" class="planet-info">
+            <h3>Jupiter ♃</h3>
+            <p>The largest planet in our solar system. A gas giant with a Great Red Spot storm.</p>
+        </div>
+        
+        <div id="saturn-info" class="planet-info">
+            <h3>Saturn ♄</h3>
+            <p>Famous for its beautiful ring system. Another gas giant with many moons.</p>
+        </div>
+        
+        <div id="uranus-info" class="planet-info">
+            <h3>Uranus ♅</h3>
+            <p>An ice giant that rotates on its side. Has a faint ring system.</p>
+        </div>
+        
+        <div id="neptune-info" class="planet-info">
+            <h3>Neptune ♆</h3>
+            <p>The windiest planet with speeds up to 2,100 km/h. The furthest planet from the Sun.</p>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <p>🖱️ Click planets to interact | ⏸️ Click to pause/resume</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let animationId;
+        let isPaused = false;
+        let time = 0;
+        
+        // Solar system center
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // Planet data with orbital information
+        const planets = [
+            {
+                name: 'sun',
+                radius: 25,
+                color: '#FDB813',
+                orbitRadius: 0,
+                speed: 0,
+                angle: 0,
+                clickRadius: 30
+            },
+            {
+                name: 'mercury',
+                radius: 4,
+                color: '#8C7853',
+                orbitRadius: 60,
+                speed: 0.008,
+                angle: 0,
+                clickRadius: 8
+            },
+            {
+                name: 'venus',
+                radius: 7,
+                color: '#FFC649',
+                orbitRadius: 85,
+                speed: 0.007,
+                angle: 0,
+                clickRadius: 12
+            },
+            {
+                name: 'earth',
+                radius: 8,
+                color: '#6B93D6',
+                orbitRadius: 110,
+                speed: 0.006,
+                angle: 0,
+                clickRadius: 13
+            },
+            {
+                name: 'mars',
+                radius: 6,
+                color: '#CD5C5C',
+                orbitRadius: 140,
+                speed: 0.005,
+                angle: 0,
+                clickRadius: 10
+            },
+            {
+                name: 'jupiter',
+                radius: 20,
+                color: '#D8CA9D',
+                orbitRadius: 200,
+                speed: 0.003,
+                angle: 0,
+                clickRadius: 25
+            },
+            {
+                name: 'saturn',
+                radius: 18,
+                color: '#FAD5A5',
+                orbitRadius: 250,
+                speed: 0.0024,
+                angle: 0,
+                clickRadius: 25
+            },
+            {
+                name: 'uranus',
+                radius: 12,
+                color: '#4FD0E7',
+                orbitRadius: 300,
+                speed: 0.0016,
+                angle: 0,
+                clickRadius: 17
+            },
+            {
+                name: 'neptune',
+                radius: 11,
+                color: '#4B70DD',
+                orbitRadius: 350,
+                speed: 0.0012,
+                angle: 0,
+                clickRadius: 16
+            }
+        ];
+        
+        // Planet-specific functions
+        const planetFunctions = {
+            sun: function() {
+                console.log('Sun clicked! ☀️');
+                alert('The Sun: Our magnificent star! 🌟\nFun fact: The Sun is so large that about 1.3 million Earths could fit inside it!');
+                showPlanetInfo('sun');
+            },
+            
+            mercury: function() {
+                console.log('Mercury clicked! ☿️');
+                alert('Mercury: The Swift Planet! 🏃‍♂️\nFun fact: A day on Mercury (243 Earth days) is longer than its year (88 Earth days)!');
+                showPlanetInfo('mercury');
+            },
+            
+            venus: function() {
+                console.log('Venus clicked! ♀️');
+                alert('Venus: The Morning Star! 🌅\nFun fact: Venus rotates backwards compared to most planets!');
+                showPlanetInfo('venus');
+            },
+            
+            earth: function() {
+                console.log('Earth clicked! 🌍');
+                alert('Earth: Our Beautiful Home! 🏠\nFun fact: Earth is the only planet not named after a Roman or Greek god!');
+                showPlanetInfo('earth');
+            },
+            
+            mars: function() {
+                console.log('Mars clicked! ♂️');
+                alert('Mars: The Red Planet! 🔴\nFun fact: Mars has the largest dust storms in the solar system!');
+                showPlanetInfo('mars');
+            },
+            
+            jupiter: function() {
+                console.log('Jupiter clicked! ♃');
+                alert('Jupiter: The Giant Guardian! 🛡️\nFun fact: Jupiter protects Earth from asteroids with its massive gravity!');
+                showPlanetInfo('jupiter');
+            },
+            
+            saturn: function() {
+                console.log('Saturn clicked! ♄');
+                alert('Saturn: The Ringed Beauty! 💍\nFun fact: Saturn is less dense than water - it would float!');
+                showPlanetInfo('saturn');
+            },
+            
+            uranus: function() {
+                console.log('Uranus clicked! ♅');
+                alert('Uranus: The Sideways Planet! ↩️\nFun fact: Uranus rotates on its side at a 98-degree angle!');
+                showPlanetInfo('uranus');
+            },
+            
+            neptune: function() {
+                console.log('Neptune clicked! ♆');
+                alert('Neptune: The Windy Giant! 💨\nFun fact: Neptune has the strongest winds in the solar system!');
+                showPlanetInfo('neptune');
+            }
+        };
+        
+        function showPlanetInfo(planetName) {
+            // Hide all planet info
+            document.querySelectorAll('.planet-info').forEach(info => {
+                info.classList.remove('active');
+            });
+            
+            // Show selected planet info
+            const planetInfo = document.getElementById(`${planetName}-info`);
+            if (planetInfo) {
+                planetInfo.classList.add('active');
+            }
+        }
+        
+        function drawOrbit(radius) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        
+        function drawPlanet(planet) {
+            const x = centerX + Math.cos(planet.angle) * planet.orbitRadius;
+            const y = centerY + Math.sin(planet.angle) * planet.orbitRadius;
+            
+            // Store position for click detection
+            planet.x = x;
+            planet.y = y;
+            
+            // Draw planet
+            ctx.beginPath();
+            ctx.arc(x, y, planet.radius, 0, Math.PI * 2);
+            ctx.fillStyle = planet.color;
+            ctx.fill();
+            
+            // Add glow effect
+            ctx.shadowColor = planet.color;
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Special effects for specific planets
+            if (planet.name === 'saturn') {
+                // Draw Saturn's rings
+                ctx.beginPath();
+                ctx.arc(x, y, planet.radius + 5, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(250, 213, 165, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(x, y, planet.radius + 8, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(250, 213, 165, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            if (planet.name === 'earth') {
+                // Draw Earth's atmosphere
+                ctx.beginPath();
+                ctx.arc(x, y, planet.radius + 2, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(135, 206, 235, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+        
+        function drawStars() {
+            // Stars removed - keeping space dark
+        }
+        
+        function animate() {
+            if (!isPaused) {
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw orbits first (behind planets)
+                planets.forEach(planet => {
+                    if (planet.orbitRadius > 0) {
+                        drawOrbit(planet.orbitRadius);
+                    }
+                });
+                
+                // Update and draw planets
+                planets.forEach(planet => {
+                    if (planet.speed > 0) {
+                        planet.angle += planet.speed;
+                    }
+                    drawPlanet(planet);
+                });
+                
+                time += 0.016; // Roughly 60 FPS
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function getDistance(x1, y1, x2, y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        }
+        
+        function handleClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+            
+            // Check if any planet was clicked
+            planets.forEach(planet => {
+                const distance = getDistance(clickX, clickY, planet.x, planet.y);
+                if (distance <= planet.clickRadius) {
+                    // Execute the planet's specific function
+                    if (planetFunctions[planet.name]) {
+                        planetFunctions[planet.name]();
+                    }
+                }
+            });
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+        
+        // Event listeners
+        canvas.addEventListener('click', handleClick);
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                togglePause();
+            }
+        });
+        
+        // Initialize with random starting positions
+        planets.forEach(planet => {
+            planet.angle = Math.random() * Math.PI * 2;
+        });
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

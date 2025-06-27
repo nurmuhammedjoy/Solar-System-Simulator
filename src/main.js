@@ -7,6 +7,14 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
+
+// const canvas = document.getElementById('canvas');
+// const ctx = canvas.getContext('2d');
+// let animationId;
+// let isPaused = false;
+// let time = 0;
+        
+function int (){
 const fpsDisplay = document.createElement('div');
 fpsDisplay.style.position = 'absolute';
 fpsDisplay.style.top = '0';
@@ -18,7 +26,7 @@ fpsDisplay.style.padding = '5px';
 document.body.appendChild(fpsDisplay);
 
 let lastTime = performance.now();
-let frames = 0;
+let frames = null;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
@@ -175,6 +183,7 @@ const textures = {
   mercury: 'texture/mercury.jpg',
   venus: 'texture/8k_venus_surface.jpg',
   venusatmosphere: 'texture/4k_venus_atmosphere.jpg',
+  mars: 'texture/8k_mars.jpg'
 };
 
 const objectInfo = new Map([
@@ -193,7 +202,11 @@ const objectInfo = new Map([
   ['Venus', {
     title: 'Venus',
     description: 'Venus is the second planet from the Sun. It is a rocky planet with a dense, toxic atmosphere.'
-  }]
+  }],
+  ['Mars', {
+  title: 'Mars',
+  description: 'Mars is the fourth planet from the Sun. It’s known as the Red Planet and may have once supported life.'
+}],
 ]);
 
 const raycaster = new THREE.Raycaster();
@@ -262,10 +275,10 @@ function createEarth() {
     transparent: true
   })));
 }
-createEarth();
+// createEarth();
 
 
-let mercury, venus;
+let mercury;
 
 function createMercury() {
   const loader = new THREE.TextureLoader();
@@ -280,6 +293,8 @@ function createMercury() {
   raycastable.push(mercury);
   scene.add(mercury);
 }
+
+let venus;
 
 function createVenus() {
   const loader = new THREE.TextureLoader();
@@ -312,8 +327,23 @@ function createVenus() {
 }
 
 //createVenus();
-// createEarth(); // Uncomment if you want Earth
-// createMercury(); // Uncomment if you want Mercury
+let mars;
+
+function createMars() {
+  const loader = new THREE.TextureLoader();
+  const geometry = new THREE.IcosahedronGeometry(10, 16);
+  const marsMet = new THREE.MeshStandardMaterial({ map: loader.load(textures.mars) });
+
+  mars = new THREE.Mesh(geometry, marsMet);
+  mars.name = 'Mars';
+  mars.position.set(0, 0, 0);
+  mars.add(createLabel('Mars', new THREE.Vector3(0, 5, 0)));
+
+  raycastable.push(mars);
+  scene.add(mars);
+}
+
+createMars()
 
 let hideInfoTimeout = null;
 function handleRaycast(x, y) {
@@ -406,3 +436,5 @@ function animate() {
   }
 }
 animate();
+}
+int()
