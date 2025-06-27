@@ -297,8 +297,8 @@ function createMercury() {
   scene.add(mercury);
 }
 //createMercury()
-let venus;
 
+let venus;
 function createVenus() {
   const loader = new THREE.TextureLoader();
   const geometry = new THREE.IcosahedronGeometry(3, 16);
@@ -319,17 +319,23 @@ function createVenus() {
     })
   );
   atmosphere.scale.setScalar(1);
+  
+  const glow = new THREE.Mesh(geometry.clone(), getFresnelMatMars());
+  glow.scale.setScalar(1.01);
 
   const venusGroup = new THREE.Group();
-  venusGroup.add(venus, atmosphere);
-  venusGroup.rotation.z = THREE.MathUtils.degToRad(177.4);
-  venus.add(createLabel('Venus', new THREE.Vector3(5, 0, 0)));
+  venusGroup.add(venus, atmosphere, glow);
+  venusGroup.rotation.z = THREE.MathUtils.degToRad(9);
+  venus.add(createLabel('Venus', new THREE.Vector3(0, 5, 0)));
 
   raycastable.push(venus);
   scene.add(venusGroup);
 }
 
-//createVenus();
+
+createVenus();
+
+
 let mars;
 
 function createMars() {
@@ -340,7 +346,7 @@ function createMars() {
   mars = new THREE.Mesh(geometry, marsMet);
   mars.name = 'Mars';
   mars.position.set(0, 0, 0);
-  mars.add(createLabel('Mars', new THREE.Vector3(0, 5, 0)));
+  mars.add(createLabel('Mars', new THREE.Vector3(0, -5, -5)));
   const glow = new THREE.Mesh(geometry.clone(), getFresnelMatMars());
   glow.scale.setScalar(1.01);
   mars.add(glow);
@@ -348,7 +354,7 @@ function createMars() {
   scene.add(mars);
 }
 
-createMars()
+//createMars()
 
 let hideInfoTimeout = null;
 function handleRaycast(x, y) {
