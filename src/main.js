@@ -8,10 +8,109 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 
+// const canvas = document.getElementById('canvas');
+// const ctx = canvas.getContext('2d');
+// let animationId;
+// let isPaused = false;
+// let time = 0;
+        
+function int (){
+const fpsDisplay = document.createElement('div');
+fpsDisplay.style.position = 'absolute';
+fpsDisplay.style.top = '0';
+fpsDisplay.style.left = '0';
+fpsDisplay.style.color = 'lime';
+fpsDisplay.style.fontFamily = 'monospace';
+fpsDisplay.style.background = 'rgba(0,0,0,0.5)';
+fpsDisplay.style.padding = '5px';
+document.body.appendChild(fpsDisplay);
+
+let lastTime = performance.now();
+let frames = null;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
 camera.position.set(0, 100, 300);
+
+
+    function createSun(radius = 2) {
+      const sunGeometry = new THREE.SphereGeometry(radius, 64, 64);
+      const sunMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          time: { value: 0 },
+          color1: { value: new THREE.Color(0xff4500) },
+          color2: { value: new THREE.Color(0xffff00) },
+          color3: { value: new THREE.Color(0xff8c00) }
+        },
+        vertexShader: `
+          uniform float time;
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          varying vec2 vUv;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = position;
+            vUv = uv;
+            vec3 pos = position;
+            float noise = sin(pos.x * 5.0 + time) * cos(pos.y * 5.0 + time) * sin(pos.z * 5.0 + time);
+            pos += normal * noise * 0.05;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float time;
+          uniform vec3 color1, color2, color3;
+          varying vec3 vNormal, vPosition;
+          varying vec2 vUv;
+          void main() {
+            float p1 = sin(vPosition.x * 10.0 + time * 2.0) * cos(vPosition.y * 10.0 + time * 1.5);
+            float p2 = sin(vPosition.z * 8.0 + time * 3.0) * cos(vPosition.x * 6.0 + time * 2.5);
+            float intensity = (p1 + p2) * 0.5 + 0.5;
+            vec3 baseColor = mix(color1, color2, intensity);
+            vec3 finalColor = mix(baseColor, color3, sin(time + intensity * 3.14) * 0.5 + 0.5);
+            float rim = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
+            finalColor += vec3(1.0, 0.8, 0.3) * rim * 0.5;
+            float pulse = sin(time * 4.0) * 0.1 + 0.9;
+            gl_FragColor = vec4(finalColor * pulse, 1.0);
+          }
+        `
+      });
+      const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+
+      const coronaGeometry = new THREE.SphereGeometry(radius, 32, 32);
+      const coronaMaterial = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 } },
+        vertexShader: `
+          uniform float time;
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec3 pos = position * 1.2;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float time;
+          varying vec3 vNormal;
+          void main() {
+            float intensity = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
+            float glow = sin(time * 2.0) * 0.3 + 0.7;
+            vec3 glowColor = vec3(1.0, 0.6, 0.2);
+            gl_FragColor = vec4(glowColor, intensity * glow * 0.3);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide
+      });
+      const corona = new THREE.Mesh(coronaGeometry, coronaMaterial);
+
+      return { sun, corona, update: (time) => {
+        sunMaterial.uniforms.time.value = time;
+        coronaMaterial.uniforms.time.value = time;
+      }};
+    }
+
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -28,8 +127,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.005));
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+scene.add(new THREE.AmbientLight(0xffffff, 0.05));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
 dirLight.position.set(500, 0, 67);
 scene.add(dirLight);
 function addStars(count = 4000, range = 2000) {
@@ -40,24 +139,39 @@ function addStars(count = 4000, range = 2000) {
   scene.add(new THREE.Points(geometry, material));
 }
 addStars();
-const sunGeo = new THREE.SphereGeometry(10, 64, 64);
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
-const sun = new THREE.Mesh(sunGeo, sunMat);
-scene.add(sun);
-sun.position.set(500, 0, 67);
 
-const renderScene = new RenderPass(scene, camera);
 
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.7,  
-  1,  
-  0.0
-);
-const composer = new EffectComposer(renderer);
-composer.addPass(renderScene);
-composer.addPass(bloomPass);
+// const sunGeo = new THREE.SphereGeometry(10, 64, 64);
+// const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+// const sun = new THREE.Mesh(sunGeo, sunMat);
+// scene.add(sun);
+// sun.position.set(500, 0, 67);
+// sun.layers.set(BLOOM_LAYER); 
+// const renderScene = new RenderPass(scene, camera);
+// const bloomPass = new UnrealBloomPass(
+//   new THREE.Vector2(window.innerWidth, window.innerHeight),
+//   0.7,  
+//   1,  
+//   0.0
+// );
+// const composer = new EffectComposer(renderer);
+// composer.addPass(renderScene);
+// composer.addPass(bloomPass);
 
+
+// function darkenNonBloomed(obj) {
+//   if (obj.isMesh && obj.layers.test(camera.layers) === false) {
+//     materials[obj.uuid] = obj.material;
+//     obj.material = darkMaterial;
+//   }
+// }
+
+// function restoreMaterials(obj) {
+//   if (materials[obj.uuid]) {
+//     obj.material = materials[obj.uuid];
+//     delete materials[obj.uuid];
+//   }
+// }
 
 const textures = {
   Earth: '/texture/8081_earthmap4k.jpg',
@@ -69,6 +183,7 @@ const textures = {
   mercury: 'texture/mercury.jpg',
   venus: 'texture/8k_venus_surface.jpg',
   venusatmosphere: 'texture/4k_venus_atmosphere.jpg',
+  mars: 'texture/8k_mars.jpg'
 };
 
 const objectInfo = new Map([
@@ -87,7 +202,11 @@ const objectInfo = new Map([
   ['Venus', {
     title: 'Venus',
     description: 'Venus is the second planet from the Sun. It is a rocky planet with a dense, toxic atmosphere.'
-  }]
+  }],
+  ['Mars', {
+  title: 'Mars',
+  description: 'Mars is the fourth planet from the Sun. It’s known as the Red Planet and may have once supported life.'
+}],
 ]);
 
 const raycaster = new THREE.Raycaster();
@@ -149,12 +268,17 @@ function createEarth() {
     orbitPoints.push(a * Math.cos(t), 0, b * Math.sin(t));
   }
   const orbitGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
-  moonGroup.add(new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ color: 0xffffff })));
+  moonGroup.add(new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ 
+    color: 0xffffff,
+    linewidth: 3,
+    opacity: 0.1,
+    transparent: true
+  })));
 }
-createEarth();
+// createEarth();
 
 
-let mercury, venus;
+let mercury;
 
 function createMercury() {
   const loader = new THREE.TextureLoader();
@@ -169,6 +293,8 @@ function createMercury() {
   raycastable.push(mercury);
   scene.add(mercury);
 }
+
+let venus;
 
 function createVenus() {
   const loader = new THREE.TextureLoader();
@@ -201,8 +327,23 @@ function createVenus() {
 }
 
 //createVenus();
-// createEarth(); // Uncomment if you want Earth
-// createMercury(); // Uncomment if you want Mercury
+let mars;
+
+function createMars() {
+  const loader = new THREE.TextureLoader();
+  const geometry = new THREE.IcosahedronGeometry(10, 16);
+  const marsMet = new THREE.MeshStandardMaterial({ map: loader.load(textures.mars) });
+
+  mars = new THREE.Mesh(geometry, marsMet);
+  mars.name = 'Mars';
+  mars.position.set(0, 0, 0);
+  mars.add(createLabel('Mars', new THREE.Vector3(0, 5, 0)));
+
+  raycastable.push(mars);
+  scene.add(mars);
+}
+
+createMars()
 
 let hideInfoTimeout = null;
 function handleRaycast(x, y) {
@@ -254,14 +395,17 @@ infoPanel.style = 'position:absolute;top:20px;right:20px;background:rgba(0,0,0,0
 infoPanel.innerHTML = '<h3 id="info-title"></h3><p id="info-description"></p>';
 document.body.appendChild(infoPanel);
 
+
+
+
 function animate() {
   requestAnimationFrame(animate);
 
   if (earthGroup) {
-    earthGroup.rotation.y += 0.00002;
+    earthGroup.rotation.y += 0.00001;
     const moon = earthGroup.getObjectByName('Moon');
     if (moon) {
-      const time = Date.now() * 0.000005;
+      const time = Date.now() * 0.0000005;
       const a = 100, b = 80;
       moon.position.set(a * Math.cos(time), 0, b * Math.sin(time));
     }
@@ -277,7 +421,20 @@ function animate() {
 
   controls.update();
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
-  composer.render();
+  // scene.traverse(darkenNonBloomed);
+  // camera.layers.set(BLOOM_LAYER); 
+  // bloomComposer.render();
+  // camera.layers.set(1); 
+  // scene.traverse(restoreMaterials);
+  const now = performance.now();
+  frames++;
+
+  if (now - lastTime >= 1000) {
+    fpsDisplay.textContent = `FPS: ${frames}`;
+    frames = 0;
+    lastTime = now;
+  }
 }
 animate();
+}
+int()
