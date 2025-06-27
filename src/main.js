@@ -2,12 +2,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { getFresnelMat } from './getFresnelMat';
-import { getFresnelMatMars }from './getFresnelMatMars';
-// import { getVenusFresnelMat } from './getVenusFresnelMat';
+import { getVenusFresnelMat } from './getVenusFresnelMat';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-// import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+
 
 // const canvas = document.getElementById('canvas');
 // const ctx = canvas.getContext('2d');
@@ -22,6 +21,7 @@ fpsDisplay.style.top = '0';
 fpsDisplay.style.left = '0';
 fpsDisplay.style.color = 'lime';
 fpsDisplay.style.fontFamily = 'monospace';
+fpsDisplay.style.background = 'rgba(0,0,0,0.5)';
 fpsDisplay.style.padding = '5px';
 document.body.appendChild(fpsDisplay);
 
@@ -32,83 +32,84 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
 camera.position.set(0, 100, 300);
 
-// function createSun(radius = 2) {
-//       const sunGeometry = new THREE.SphereGeometry(radius, 64, 64);
-//       const sunMaterial = new THREE.ShaderMaterial({
-//         uniforms: {
-//           time: { value: 0 },
-//           color1: { value: new THREE.Color(0xff4500) },
-//           color2: { value: new THREE.Color(0xffff00) },
-//           color3: { value: new THREE.Color(0xff8c00) }
-//         },
-//         vertexShader: `
-//           uniform float time;
-//           varying vec3 vNormal;
-//           varying vec3 vPosition;
-//           varying vec2 vUv;
-//           void main() {
-//             vNormal = normalize(normalMatrix * normal);
-//             vPosition = position;
-//             vUv = uv;
-//             vec3 pos = position;
-//             float noise = sin(pos.x * 5.0 + time) * cos(pos.y * 5.0 + time) * sin(pos.z * 5.0 + time);
-//             pos += normal * noise * 0.05;
-//             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-//           }
-//         `,
-//         fragmentShader: `
-//           uniform float time;
-//           uniform vec3 color1, color2, color3;
-//           varying vec3 vNormal, vPosition;
-//           varying vec2 vUv;
-//           void main() {
-//             float p1 = sin(vPosition.x * 10.0 + time * 2.0) * cos(vPosition.y * 10.0 + time * 1.5);
-//             float p2 = sin(vPosition.z * 8.0 + time * 3.0) * cos(vPosition.x * 6.0 + time * 2.5);
-//             float intensity = (p1 + p2) * 0.5 + 0.5;
-//             vec3 baseColor = mix(color1, color2, intensity);
-//             vec3 finalColor = mix(baseColor, color3, sin(time + intensity * 3.14) * 0.5 + 0.5);
-//             float rim = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
-//             finalColor += vec3(1.0, 0.8, 0.3) * rim * 0.5;
-//             float pulse = sin(time * 4.0) * 0.1 + 0.9;
-//             gl_FragColor = vec4(finalColor * pulse, 1.0);
-//           }
-//         `
-//       });
-//       const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 
-//       const coronaGeometry = new THREE.SphereGeometry(radius, 32, 32);
-//       const coronaMaterial = new THREE.ShaderMaterial({
-//         uniforms: { time: { value: 0 } },
-//         vertexShader: `
-//           uniform float time;
-//           varying vec3 vNormal;
-//           void main() {
-//             vNormal = normalize(normalMatrix * normal);
-//             vec3 pos = position * 1.2;
-//             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-//           }
-//         `,
-//         fragmentShader: `
-//           uniform float time;
-//           varying vec3 vNormal;
-//           void main() {
-//             float intensity = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
-//             float glow = sin(time * 2.0) * 0.3 + 0.7;
-//             vec3 glowColor = vec3(1.0, 0.6, 0.2);
-//             gl_FragColor = vec4(glowColor, intensity * glow * 0.3);
-//           }
-//         `,
-//         transparent: true,
-//         blending: THREE.AdditiveBlending,
-//         side: THREE.BackSide
-//       });
-//       const corona = new THREE.Mesh(coronaGeometry, coronaMaterial);
+    function createSun(radius = 2) {
+      const sunGeometry = new THREE.SphereGeometry(radius, 64, 64);
+      const sunMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          time: { value: 0 },
+          color1: { value: new THREE.Color(0xff4500) },
+          color2: { value: new THREE.Color(0xffff00) },
+          color3: { value: new THREE.Color(0xff8c00) }
+        },
+        vertexShader: `
+          uniform float time;
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          varying vec2 vUv;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = position;
+            vUv = uv;
+            vec3 pos = position;
+            float noise = sin(pos.x * 5.0 + time) * cos(pos.y * 5.0 + time) * sin(pos.z * 5.0 + time);
+            pos += normal * noise * 0.05;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float time;
+          uniform vec3 color1, color2, color3;
+          varying vec3 vNormal, vPosition;
+          varying vec2 vUv;
+          void main() {
+            float p1 = sin(vPosition.x * 10.0 + time * 2.0) * cos(vPosition.y * 10.0 + time * 1.5);
+            float p2 = sin(vPosition.z * 8.0 + time * 3.0) * cos(vPosition.x * 6.0 + time * 2.5);
+            float intensity = (p1 + p2) * 0.5 + 0.5;
+            vec3 baseColor = mix(color1, color2, intensity);
+            vec3 finalColor = mix(baseColor, color3, sin(time + intensity * 3.14) * 0.5 + 0.5);
+            float rim = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
+            finalColor += vec3(1.0, 0.8, 0.3) * rim * 0.5;
+            float pulse = sin(time * 4.0) * 0.1 + 0.9;
+            gl_FragColor = vec4(finalColor * pulse, 1.0);
+          }
+        `
+      });
+      const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 
-//       return { sun, corona, update: (time) => {
-//         sunMaterial.uniforms.time.value = time;
-//         coronaMaterial.uniforms.time.value = time;
-//       }};
-//     }
+      const coronaGeometry = new THREE.SphereGeometry(radius, 32, 32);
+      const coronaMaterial = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 } },
+        vertexShader: `
+          uniform float time;
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec3 pos = position * 1.2;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float time;
+          varying vec3 vNormal;
+          void main() {
+            float intensity = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
+            float glow = sin(time * 2.0) * 0.3 + 0.7;
+            vec3 glowColor = vec3(1.0, 0.6, 0.2);
+            gl_FragColor = vec4(glowColor, intensity * glow * 0.3);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide
+      });
+      const corona = new THREE.Mesh(coronaGeometry, coronaMaterial);
+
+      return { sun, corona, update: (time) => {
+        sunMaterial.uniforms.time.value = time;
+        coronaMaterial.uniforms.time.value = time;
+      }};
+    }
 
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -126,12 +127,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.03));
+scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-
 dirLight.position.set(500, 0, 67);
 scene.add(dirLight);
-
 function addStars(count = 4000, range = 2000) {
   const geometry = new THREE.BufferGeometry();
   const positions = Array.from({ length: count * 3 }, () => (Math.random() - 0.5) * range);
@@ -140,8 +139,6 @@ function addStars(count = 4000, range = 2000) {
   scene.add(new THREE.Points(geometry, material));
 }
 addStars();
-
-
 
 
 // const sunGeo = new THREE.SphereGeometry(10, 64, 64);
@@ -290,13 +287,13 @@ function createMercury() {
 
   mercury = new THREE.Mesh(geometry, mercuryMat);
   mercury.name = 'Mercury';
-  mercury.position.set(0, 0, 0);
+  mercury.position.set(-40, 0, 0);
   mercury.add(createLabel('Mercury', new THREE.Vector3(0, 5, 0)));
 
   raycastable.push(mercury);
   scene.add(mercury);
 }
-//createMercury()
+
 let venus;
 
 function createVenus() {
@@ -323,7 +320,7 @@ function createVenus() {
   const venusGroup = new THREE.Group();
   venusGroup.add(venus, atmosphere);
   venusGroup.rotation.z = THREE.MathUtils.degToRad(177.4);
-  venus.add(createLabel('Venus', new THREE.Vector3(5, 0, 0)));
+  venus.add(createLabel('Venus', new THREE.Vector3(0, -4, 0)));
 
   raycastable.push(venus);
   scene.add(venusGroup);
@@ -341,9 +338,7 @@ function createMars() {
   mars.name = 'Mars';
   mars.position.set(0, 0, 0);
   mars.add(createLabel('Mars', new THREE.Vector3(0, 5, 0)));
-  const glow = new THREE.Mesh(geometry.clone(), getFresnelMatMars());
-  glow.scale.setScalar(1.01);
-  mars.add(glow);
+
   raycastable.push(mars);
   scene.add(mars);
 }
@@ -375,7 +370,7 @@ function focusOn(object) {
   const pos = new THREE.Vector3();
   object.getWorldPosition(pos);
   const dir = new THREE.Vector3().subVectors(camera.position, pos).normalize();
-  camera.position.copy(pos.clone().add(dir.multiplyScalar(40)));
+  camera.position.copy(pos.clone().add(dir.multiplyScalar(50)));
   controls.target.copy(pos);
 
   const panel = document.getElementById('info-panel');
@@ -405,7 +400,6 @@ document.body.appendChild(infoPanel);
 
 function animate() {
   requestAnimationFrame(animate);
-  labelRenderer.render(scene, camera);
 
   if (earthGroup) {
     earthGroup.rotation.y += 0.00001;
