@@ -17,15 +17,6 @@ Currently under development and optimized for low-resource environments like **T
 - Termux in android
 - node.js
 
-## ⚠️ Issues
-
-- ❗ **Vite server keeps crashing**  
-  Unsure if this is due to:
-  - Running in **Termux**, which may have limitations (especially around filesystem, Node.js, or networking).
-  - **Three.js** being a large/heavy library and hitting memory or CPU constraints.
-  
-  
-  
 
 ## Download 
 
