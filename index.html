@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>3D Solar System</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: sans-serif;
+      }
+      #infoPanel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border-radius: 8px;
+        z-index: 10;
+        display: none;
+      }
+      .label {
+        font-size: 14px;
+        font-family: Arial, sans-serif;
+        /* background: rgba(0, 0, 0, 0.6); */
+        padding: 2px 6px;
+        border-radius: 4px;
+        pointer-events: none; 
+        user-select: none;
+        white-space: nowrap;
+}
+
+    </style>
+    <script type="module" crossorigin src="/Solar-System-Simulator/assets/index-B5Qt9EMX.js"></script>
+  </head>
+  <body>
+   
+   <div id="label-earth"></div>
+   <div id="info-panel" style="
+   position: absolute;
+   top: 20px;
+   right: 20px;
+   background: rgba(0, 0, 0, 0.75);
+   color: white;
+   padding: 15px;
+   border-radius: 10px;
+   max-width: 250px;
+   font-family: sans-serif;
+   display: none;
+   z-index: 100;
+   ">
+  <h3 id="info-title">Planet</h3>
+  <p id="info-description">Details will go here.</p>
+  </div>
+  
+  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Solar System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 60vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .info h3 {
+            margin: 0 0 10px 0;
+            color: #FFD700;
+            font-size: 16px;
+        }
+        
+        .info-section {
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .info-section:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #87CEEB;
+            font-weight: bold;
+        }
+        
+        .info-value {
+            color: #E6E6FA;
+            margin-left: 5px;
+        }
+        
+        .wiki-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #4169E1;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 11px;
+            transition: back7ground 0.3s;
+            padding-right: 8px;
+        }
+        
+        
+        .wiki-link:hover {
+            background: #6495ED;
+        }
+        
+        .d {
+          display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #4169E1;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 11px;
+            transition: back7ground 0.3s;
+            padding: 8px;
+            margin: 8px;
+        }
+        .basic-info {
+            font-style: italic;
+            color: #DDA0DD;
+            margin-bottom: 15px;
+        }
+        
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="info">
+        <div></div>
+        <div id="planetInfo"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let camera = { x: 0, y: 0, zoom: 0.8 };
+        let timeSpeed = 0.3; // Very slow rotation
+        let showTrails = true;
+        let showLabels = true;
+        let trails = [];
+        let maxTrailLength = 800;
+        
+        // Touch interaction
+        let touches = [];
+        let lastPinchDistance = 0;
+        
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        
+        // Planetary data with detailed scientific information
+        const planets = [
+            {
+                name: 'Sun',
+                radius: 25,
+                color: '#FDB813',
+                distance: 0,
+                speed: 0,
+                angle: 0,
+                rotationSpeed: 0.002,
+                rotationAngle: 0,
+                mass: 1000,
+                info: 'The Sun is a massive, glowing ball of hot plasma and the gravitational anchor of our solar system, containing 99.8% of its total mass. At its core, temperatures reach around 15 million degrees Celsius, where hydrogen atoms undergo nuclear fusion to form helium—releasing enormous amounts of energy in the form of photons. These photons take thousands of years to travel from the Sun’s core to its surfaces',
+                detailedInfo: {
+                    mass: '1.989 × 10³⁰ kg',
+                    diameter: '1.392 × 10⁶ km',
+                    temperature: 'Surface: 5,778 K (5,505°C), Core: 15.7 million K',
+                    composition: 'Hydrogen (~73%), Helium (~25%), Oxygen (~1%)',
+                    gravity: '274 m/s²',
+                    magneticField: 'Complex dipole field with 11-year cycle',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Sun',
+                    d: '1.html',
+                    
+                }
+            },
+            {
+                name: 'Mercury',
+                radius: 4,
+                color: '#8C7853',
+                distance: 90,
+                speed: 0.008,
+                angle: 0,
+                rotationSpeed: 0.0004,
+                rotationAngle: 0,
+                mass: 1,
+                info: 'Closest to Sun, extreme temperatures',
+                detailedInfo: {
+                    mass: '3.301 × 10²³ kg',
+                    diameter: '4,879 km',
+                    atmosphere: 'Extremely thin: Oxygen (42%), Sodium (29%), Hydrogen (22%), Helium (6%)',
+                    gravity: '3.7 m/s²',
+                    surfaceArea: '7.48 × 10⁷ km²',
+                    temperature: 'Day: 427°C, Night: -173°C',
+                    magneticField: 'Weak global magnetic field (1% of Earth\'s)',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Mercury_(planet)',
+                    d: '1.html'
+                }
+            },
+            {
+                name: 'Venus',
+                radius: 5,
+                color: '#FFC649',
+                distance: 130,
+                speed: 0.006,
+                angle: Math.PI / 3,
+                rotationSpeed: -0.0002,
+                rotationAngle: 0,
+                mass: 2,
+                info: 'Hottest planet, retrograde rotation',
+                detailedInfo: {
+                    mass: '4.867 × 10²⁴ kg',
+                    diameter: '12,104 km',
+                    atmosphere: 'Carbon dioxide (96.5%), Nitrogen (3.5%), traces of sulfur dioxide',
+                    gravity: '8.87 m/s²',
+                    surfaceArea: '4.60 × 10⁸ km²',
+                    temperature: '462°C (hottest planet)',
+                    magneticField: 'No intrinsic magnetic field',
+                    pressure: '92 bar (92 times Earth\'s pressure)',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Venus',
+                    c: '2.html',
+                }
+            },
+            {
+                name: 'Earth',
+                radius: 6,
+                color: '#6B93D6',
+                distance: 170,
+                speed: 0.005,
+                angle: Math.PI,
+                rotationSpeed: 0.02,
+                rotationAngle: 0,
+                mass: 2,
+                info: 'Our home planet, 71% water surface',
+                detailedInfo: {
+                    mass: '5.972 × 10²⁴ kg',
+                    diameter: '12,756 km',
+                    atmosphere: 'Nitrogen (78%), Oxygen (21%), Argon (0.93%), Carbon dioxide (0.04%)',
+                    gravity: '9.807 m/s²',
+                    surfaceArea: '5.10 × 10⁸ km²',
+                    temperature: 'Average: 15°C',
+                    magneticField: 'Strong dipole field, protects from solar wind',
+                    oceanCoverage: '71% of surface covered by water',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Earth',
+                    c: '3.html'
+                },
+                moon: {
+                    radius: 2,
+                    color: '#C0C0C0',
+                    distance: 15,
+                    speed: 0.06,
+                    angle: 0
+                }
+            },
+            {
+                name: 'Mars',
+                radius: 5,
+                color: '#CD5C5C',
+                distance: 220,
+                speed: 0.004,
+                angle: Math.PI * 1.5,
+                rotationSpeed: 0.019,
+                rotationAngle: 0,
+                mass: 1.5,
+                info: 'The Red Planet, has two small moons',
+                detailedInfo: {
+                    mass: '6.39 × 10²³ kg',
+                    diameter: '6,792 km',
+                    atmosphere: 'Carbon dioxide (95%), Nitrogen (2.7%), Argon (1.6%), Oxygen (0.13%)',
+                    gravity: '3.721 m/s²',
+                    surfaceArea: '144.8 × 10⁶ km²',
+                    temperature: 'Average: -65°C, Range: -143°C to 35°C',
+                    magneticField: 'Lacks global field, has localized crustal magnetic fields',
+                    moons: 'Phobos and Deimos',
+                    dayLength: '24 hours 37 minutes',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Mars',
+                    c: '4.html'
+                }
+            },
+            {
+                name: 'Jupiter',
+                radius: 18,
+                color: '#D8CA9D',
+                distance: 320,
+                speed: 0.0016,
+                angle: 0,
+                rotationSpeed: 0.048,
+                rotationAngle: 0,
+                mass: 50,
+                info: 'Largest planet, Great Red Spot storm',
+                detailedInfo: {
+                    mass: '1.898 × 10²⁷ kg',
+                    diameter: '142,984 km',
+                    atmosphere: 'Hydrogen (89%), Helium (10%), traces of methane, ammonia, hydrogen sulfide',
+                    gravity: '24.79 m/s²',
+                    surfaceArea: '6.14 × 10¹⁰ km²',
+                    temperature: 'Cloud tops: -145°C',
+                    magneticField: 'Strongest in solar system, 14 times Earth\'s strength',
+                    moons: '95 known moons (Io, Europa, Ganymede, Callisto)',
+                    greatRedSpot: 'Giant storm larger than Earth, ongoing for 350+ years',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Jupiter',
+                    c: '5.html'
+                }
+            },
+            {
+                name: 'Saturn',
+                radius: 15,
+                color: '#FAD5A5',
+                distance: 400,
+                speed: 0.0012,
+                angle: Math.PI / 2,
+                rotationSpeed: 0.044,
+                rotationAngle: 0,
+                mass: 40,
+                info: 'Beautiful ring system, low density',
+                detailedInfo: {
+                    mass: '5.683 × 10²⁶ kg',
+                    diameter: '120,536 km',
+                    atmosphere: 'Hydrogen (96%), Helium (3%), traces of methane, ammonia',
+                    gravity: '10.44 m/s²',
+                    surfaceArea: '4.27 × 10¹⁰ km²',
+                    temperature: 'Cloud tops: -178°C',
+                    magneticField: 'Strong field, nearly aligned with rotation axis',
+                    rings: 'Extensive ring system made of ice and rock particles',
+                    moons: '146 known moons (Titan, Enceladus, Mimas, Iapetus)',
+                    density: '0.687 g/cm³ (less dense than water)',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Saturn',
+                    c: '6.html'
+                },
+                rings: { inner: 18, outer: 25, color: '#FAD5A5' }
+            },
+            {
+                name: 'Uranus',
+                radius: 10,
+                color: '#4FD0E7',
+                distance: 480,
+                speed: 0.0008,
+                angle: Math.PI,
+                rotationSpeed: -0.028,
+                rotationAngle: 0,
+                mass: 15,
+                info: 'Ice giant, tilted 98 degrees',
+                detailedInfo: {
+                    mass: '8.681 × 10²⁵ kg',
+                    diameter: '51,118 km',
+                    atmosphere: 'Hydrogen (83%), Helium (15%), Methane (2%)',
+                    gravity: '8.69 m/s²',
+                    surfaceArea: '8.11 × 10⁹ km²',
+                    temperature: 'Cloud tops: -216°C',
+                    magneticField: 'Tilted 59° from rotation axis, weaker than Earth\'s',
+                    tilt: 'Rotates on its side (98° axial tilt)',
+                    moons: '27 known moons (Miranda, Ariel, Umbriel, Titania, Oberon)',
+                    rings: 'Faint ring system discovered in 1977',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Uranus',
+                    c: '7.html'
+                }
+            },
+            {
+                name: 'Neptune',
+                radius: 10,
+                color: '#4B70DD',
+                distance: 560,
+                speed: 0.0006,
+                angle: Math.PI * 1.5,
+                rotationSpeed: 0.03,
+                rotationAngle: 0,
+                mass: 15,
+                info: 'Windiest planet, deep blue color',
+                detailedInfo: {
+                    mass: '1.024 × 10²⁶ kg',
+                    diameter: '49,528 km',
+                    atmosphere: 'Hydrogen (80%), Helium (19%), Methane (1%)',
+                    gravity: '11.15 m/s²',
+                    surfaceArea: '7.64 × 10⁹ km²',
+                    temperature: 'Cloud tops: -218°C',
+                    magneticField: 'Tilted 47° from rotation axis, 27 times Earth\'s strength',
+                    winds: 'Fastest in solar system, up to 2,100 km/h',
+                    moons: '16 known moons (Triton, Nereid, Proteus)',
+                    color: 'Deep blue due to methane in atmosphere',
+                    wikiLink: 'https://en.wikipedia.org/wiki/Neptune',
+                    c: '8.html'
+                }
+            }
+        ];
+        
+        function worldToScreen(x, y) {
+            return {
+                x: (x - camera.x) * camera.zoom + width / 2,
+                y: (y - camera.y) * camera.zoom + height / 2
+            };
+        }
+        
+        function screenToWorld(x, y) {
+            return {
+                x: (x - width / 2) / camera.zoom + camera.x,
+                y: (y - height / 2) / camera.zoom + camera.y
+            };
+        }
+        
+        function drawPlanet(planet, x, y) {
+            const screenPos = worldToScreen(x, y);
+            const screenRadius = planet.radius * camera.zoom;
+            
+            if (screenRadius < 0.5) return;
+            
+            // Draw rings (Saturn)
+            if (planet.rings) {
+                ctx.strokeStyle = planet.rings.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, planet.rings.inner * camera.zoom, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, planet.rings.outer * camera.zoom, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+            
+            // Main planet body with gradient
+            const gradient = ctx.createRadialGradient(
+                screenPos.x - screenRadius * 0.3, 
+                screenPos.y - screenRadius * 0.3, 
+                0,
+                screenPos.x, 
+                screenPos.y, 
+                screenRadius
+            );
+            
+            if (planet.name === 'Sun') {
+                gradient.addColorStop(0, '#FFFF80');
+                gradient.addColorStop(0.7, planet.color);
+                gradient.addColorStop(1, '#FF8C00');
+            } else {
+                gradient.addColorStop(0, lightenColor(planet.color, 0.3));
+                gradient.addColorStop(1, planet.color);
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y, screenRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add rotation indicators for larger planets
+            if (screenRadius > 8 && planet.name !== 'Sun') {
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 2;
+                const rotX = screenPos.x + Math.cos(planet.rotationAngle) * screenRadius * 0.8;
+                const rotY = screenPos.y + Math.sin(planet.rotationAngle) * screenRadius * 0.8;
+                ctx.beginPath();
+                ctx.moveTo(screenPos.x, screenPos.y);
+                ctx.lineTo(rotX, rotY);
+                ctx.stroke();
+                
+                // Add a small dot at the end
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.beginPath();
+                ctx.arc(rotX, rotY, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw moon (Earth)
+            if (planet.moon) {
+                const moonX = x + Math.cos(planet.moon.angle) * planet.moon.distance;
+                const moonY = y + Math.sin(planet.moon.angle) * planet.moon.distance;
+                const moonScreenPos = worldToScreen(moonX, moonY);
+                
+                ctx.fillStyle = planet.moon.color;
+                ctx.beginPath();
+                ctx.arc(moonScreenPos.x, moonScreenPos.y, planet.moon.radius * camera.zoom, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Moon orbit line
+                ctx.strokeStyle = 'rgba(192,192,192,0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, planet.moon.distance * camera.zoom, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Labels
+            if (showLabels && screenRadius > 3) {
+                ctx.fillStyle = 'white';
+                ctx.font = `${Math.max(12, screenRadius / 3)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 3;
+                ctx.fillText(planet.name, screenPos.x, screenPos.y + screenRadius + 20);
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        function lightenColor(color, factor) {
+            const hex = color.replace('#', '');
+            const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + factor * 255);
+            const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + factor * 255);
+            const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + factor * 255);
+            return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+        }
+        
+        function updatePlanets() {
+            planets.forEach(planet => {
+                if (planet.distance > 0) {
+                    planet.angle += planet.speed * timeSpeed;
+                    planet.rotationAngle += planet.rotationSpeed * timeSpeed;
+                    
+                    if (planet.moon) {
+                        planet.moon.angle += planet.moon.speed * timeSpeed;
+                    }
+                }
+            });
+        }
+        
+        function drawTrails() {
+            if (!showTrails) return;
+            
+            trails.forEach((trail, planetIndex) => {
+                if (trail.length < 2) return;
+                
+                const planet = planets[planetIndex];
+                ctx.strokeStyle = planet.color;
+                ctx.lineWidth = 1;
+                
+                ctx.beginPath();
+                trail.forEach((point, index) => {
+                    const screenPos = worldToScreen(point.x, point.y);
+                    const alpha = (index / trail.length) * 0.4;
+                    ctx.globalAlpha = alpha;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(screenPos.x, screenPos.y);
+                    } else {
+                        ctx.lineTo(screenPos.x, screenPos.y);
+                    }
+                });
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            });
+        }
+        
+        function updateTrails() {
+            if (!showTrails) return;
+            
+            planets.forEach((planet, index) => {
+                if (planet.distance === 0) return; // Skip sun
+                
+                const x = Math.cos(planet.angle) * planet.distance;
+                const y = Math.sin(planet.angle) * planet.distance;
+                
+                if (!trails[index]) trails[index] = [];
+                
+                if (trails[index].length === 0 || 
+                    Math.abs(trails[index][trails[index].length - 1].x - x) > 2 ||
+                    Math.abs(trails[index][trails[index].length - 1].y - y) > 2) {
+                    trails[index].push({ x, y });
+                }
+                
+                if (trails[index].length > maxTrailLength) {
+                    trails[index].shift();
+                }
+            });
+        }
+        
+        function render() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            
+  
+            const time = Date.now() * 0.0001;
+            
+    
+            const starConfig = {
+                count: 0,         
+                colors: ['white', '#FFE4B5', '#B0E0E6', '#FFB6C1', '#98FB98'], 
+                sizes: [1, 1, 1, 2, 2, 3],  // Star sizes (weighted array)
+                twinkleSpeed: 2,      // How fast stars twinkle (0-5)
+                moveSpeed: 0.5,       // How much stars drift (0-2)
+                brightness: 0.8       // Overall brightness (0-1)
+            };
+            
+            for (let i = 0; i < starConfig.count; i++) {
+                // Calculate star position with slight movement
+                const starX = ((i * 37) % width + Math.sin(time * starConfig.moveSpeed + i) * 1) % width;
+                const starY = ((i * 73) % height + Math.cos(time * starConfig.moveSpeed + i * 0.7) * 1) % height;
+                
+                // Calculate twinkling brightness
+                const brightness = starConfig.brightness * (0.3 + Math.sin(time * starConfig.twinkleSpeed + i) * 0.4);
+                ctx.globalAlpha = brightness;
+                
+                // Choose random color and size for each star
+                const colorIndex = i % starConfig.colors.length;
+                const sizeIndex = i % starConfig.sizes.length;
+                
+                ctx.fillStyle = starConfig.colors[colorIndex];
+                const starSize = starConfig.sizes[sizeIndex];
+                
+                // Draw star (you can change this to draw different shapes)
+                if (starSize === 1) {
+                    // Small stars - single pixel
+                    ctx.fillRect(starX, starY, 1, 1);
+                } else {
+                    // Larger stars - circles or crosses
+                    if (i % 3 === 0) {
+                        // Draw as circle
+                        ctx.beginPath();
+                        ctx.arc(starX, starY, starSize / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        // Draw as cross/plus shape
+                        ctx.fillRect(starX - starSize/2, starY, starSize, 1);
+                        ctx.fillRect(starX, starY - starSize/2, 1, starSize);
+                    }
+                }
+            }
+            ctx.globalAlpha = 1;
+            
+            drawTrails();
+            
+            // Draw orbital paths
+            ctx.strokeStyle = 'rgba(100,100,100,0.2)';
+            ctx.lineWidth = 1;
+            planets.forEach(planet => {
+                if (planet.distance > 0) {
+                    const center = worldToScreen(0, 0);
+                    ctx.beginPath();
+                    ctx.arc(center.x, center.y, planet.distance * camera.zoom, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw planets
+            planets.forEach(planet => {
+                let x, y;
+                if (planet.distance === 0) {
+                    x = y = 0; // Sun at center
+                } else {
+                    x = Math.cos(planet.angle) * planet.distance;
+                    y = Math.sin(planet.angle) * planet.distance;
+                }
+                
+                drawPlanet(planet, x, y);
+            });
+        }
+        
+        function gameLoop() {
+            updatePlanets();
+            updateTrails();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Individual planet functions - customize these later
+        function onSunClick() {
+            console.log('Sun clicked!');
+            // Add your custom Sun logic here
+        }
+        
+        function onMercuryClick() {
+            console.log('Mercury clicked!');
+            // Add your custom Mercury logic here
+        }
+        
+        function onVenusClick() {
+            console.log('Venus clicked!');
+            // Add your custom Venus logic here
+        }
+        
+        function onEarthClick() {
+            console.log('Earth clicked!');
+            // Add your custom Earth logic here
+        }
+        
+        function onMarsClick() {
+            console.log('Mars clicked!');
+            // Add your custom Mars logic here
+        }
+        
+        function onJupiterClick() {
+            console.log('Jupiter clicked!');
+            // Add your custom Jupiter logic here
+        }
+        
+        function onSaturnClick() {
+            console.log('Saturn clicked!');
+            // Add your custom Saturn logic here
+        }
+        
+        function onUranusClick() {
+            console.log('Uranus clicked!');
+            // Add your custom Uranus logic here
+        }
+        
+        function onNeptuneClick() {
+            console.log('Neptune clicked!');
+            // Add your custom Neptune logic here
+        }
+        
+        // Function to create detailed info HTML
+        function createDetailedInfo(planet) {
+            const details = planet.detailedInfo;
+            if (!details) return planet.info;
+            
+            let html = `
+                <h3>${planet.name}</h3>
+                <div class="basic-info">${planet.info}</div>
+            `;
+            
+            if (details.mass) {
+                html += `<div class="info-section">
+                    <span class="info-label">Mass:</span>
+                    <span class="info-value">${details.mass}</span>
+                </div>`;
+            }
+            
+            if (details.diameter) {
+                html += `<div class="info-section">
+                    <span class="info-label">Diameter:</span>
+                    <span class="info-value">${details.diameter}</span>
+                </div>`;
+            }
+            
+            if (details.atmosphere) {
+                html += `<div class="info-section">
+                    <span class="info-label">Atmosphere:</span>
+                    <span class="info-value">${details.atmosphere}</span>
+                </div>`;
+            }
+            
+            if (details.gravity) {
+                html += `<div class="info-section">
+                    <span class="info-label">Gravity:</span>
+                    <span class="info-value">${details.gravity}</span>
+                </div>`;
+            }
+            
+            if (details.surfaceArea) {
+                html += `<div class="info-section">
+                    <span class="info-label">Surface Area:</span>
+                    <span class="info-value">${details.surfaceArea}</span>
+                </div>`;
+            }
+            
+            if (details.temperature) {
+                html += `<div class="info-section">
+                    <span class="info-label">Temperature:</span>
+                    <span class="info-value">${details.temperature}</span>
+                </div>`;
+            }
+            
+            if (details.magneticField) {
+                html += `<div class="info-section">
+                    <span class="info-label">Magnetic Field:</span>
+                    <span class="info-value">${details.magneticField}</span>
+                </div>`;
+            }
+            
+            if (details.moons) {
+                html += `<div class="info-section">
+                    <span class="info-label">Moons:</span>
+                    <span class="info-value">${details.moons}</span>
+                </div>`;
+            }
+            
+            if (details.rings) {
+                html += `<div class="info-section">
+                    <span class="info-label">Rings:</span>
+                    <span class="info-value">${details.rings}</span>
+                </div>`;
+            }
+            
+            if (details.composition) {
+                html += `<div class="info-section">
+                    <span class="info-label">Composition:</span>
+                    <span class="info-value">${details.composition}</span>
+                </div>`;
+            }
+            
+            if (details.winds) {
+                html += `<div class="info-section">
+                    <span class="info-label">Winds:</span>
+                    <span class="info-value">${details.winds}</span>
+                </div>`;
+            }
+            
+            if (details.tilt) {
+                html += `<div class="info-section">
+                    <span class="info-label">Axial Tilt:</span>
+                    <span class="info-value">${details.tilt}</span>
+                </div>`;
+            }
+            
+            if (details.pressure) {
+                html += `<div class="info-section">
+                    <span class="info-label">Pressure:</span>
+                    <span class="info-value">${details.pressure}</span>
+                </div>`;
+            }
+            
+            if (details.oceanCoverage) {
+                html += `<div class="info-section">
+                    <span class="info-label">Ocean Coverage:</span>
+                    <span class="info-value">${details.oceanCoverage}</span>
+                </div>`;
+            }
+            
+            if (details.density) {
+                html += `<div class="info-section">
+                    <span class="info-label">Density:</span>
+                    <span class="info-value">${details.density}</span>
+                </div>`;
+            }
+            
+            if (details.greatRedSpot) {
+                html += `<div class="info-section">
+                    <span class="info-label">Great Red Spot:</span>
+                    <span class="info-value">${details.greatRedSpot}</span>
+                </div>`;
+            }
+            
+            if (details.dayLength) {
+                html += `<div class="info-section">
+                    <span class="info-label">Day Length:</span>
+                    <span class="info-value">${details.dayLength}</span>
+                </div>`;
+            }
+            
+            if (details.color) {
+                html += `<div class="info-section">
+                    <span class="info-label">Color:</span>
+                    <span class="info-value">${details.color}</span>
+                </div>`;
+            }
+            
+            if (details.wikiLink) {
+                html += `<a href="${details.wikiLink}" target="_blank" class="wiki-link">📖 Read more on Wikipedia</a>`;
+                html += `<a href="${details.d}" class="d">3D view</a>`;
+                
+            }
+            
+            return html;
+        }
+        
+        // Function to execute when planet is clicked
+        function onPlanetClick(planet) {
+            // Show detailed planet info
+            document.getElementById('planetInfo').innerHTML = createDetailedInfo(planet);
+            
+            // Execute specific function based on planet name
+            switch(planet.name) {
+                case 'Sun':
+                    onSunClick();
+                    break;
+                case 'Mercury':
+                    onMercuryClick();
+                    break;
+                case 'Venus':
+                    onVenusClick();
+                    break;
+                case 'Earth':
+                    onEarthClick();
+                    break;
+                case 'Mars':
+                    onMarsClick();
+                    break;
+                case 'Jupiter':
+                    onJupiterClick();
+                    break;
+                case 'Saturn':
+                    onSaturnClick();
+                    break;
+                case 'Uranus':
+                    onUranusClick();
+                    break;
+                case 'Neptune':
+                    onNeptuneClick();
+                    break;
+                default:
+                    console.log(`Unknown planet: ${planet.name}`);
+            }
+        }
+        
+        // Touch event handlers
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touches = Array.from(e.touches);
+            
+            if (touches.length === 1) {
+                // Single touch - check for planet tap
+                const touch = touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                const worldPos = screenToWorld(x, y);
+                planets.forEach(planet => {
+                    let px, py;
+                    if (planet.distance === 0) {
+                        px = py = 0;
+                    } else {
+                        px = Math.cos(planet.angle) * planet.distance;
+                        py = Math.sin(planet.angle) * planet.distance;
+                    }
+                    
+                    const dist = Math.sqrt((worldPos.x - px) ** 2 + (worldPos.y - py) ** 2);
+                    if (dist < planet.radius) {
+                        onPlanetClick(planet);
+                    }
+                });
+            }
+            
+            if (touches.length === 2) {
+                // Pinch start
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                lastPinchDistance = Math.sqrt(dx * dx + dy * dy);
+            }
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const newTouches = Array.from(e.touches);
+            
+            if (touches.length === 1 && newTouches.length === 1) {
+                // Single touch drag - pan
+                const dx = newTouches[0].clientX - touches[0].clientX;
+                const dy = newTouches[0].clientY - touches[0].clientY;
+                camera.x -= dx / camera.zoom;
+                camera.y -= dy / camera.zoom;
+            } else if (touches.length === 2 && newTouches.length === 2) {
+                // Pinch zoom
+                const dx = newTouches[0].clientX - newTouches[1].clientX;
+                const dy = newTouches[0].clientY - newTouches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (lastPinchDistance > 0) {
+                    const zoomFactor = distance / lastPinchDistance;
+                    camera.zoom *= zoomFactor;
+                    camera.zoom = Math.max(0.1, Math.min(3, camera.zoom));
+                }
+                lastPinchDistance = distance;
+            }
+            
+            touches = newTouches;
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touches = Array.from(e.touches);
+            if (touches.length < 2) {
+                lastPinchDistance = 0;
+            }
+        });
+        
+        // Mouse events for desktop compatibility
+        let mouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            
+            // Check for planet click on desktop
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            planets.forEach(planet => {
+                let px, py;
+                if (planet.distance === 0) {
+                    px = py = 0;
+                } else {
+                    px = Math.cos(planet.angle) * planet.distance;
+                    py = Math.sin(planet.angle) * planet.distance;
+                }
+                
+                const dist = Math.sqrt((worldPos.x - px) ** 2 + (worldPos.y - py) ** 2);
+                if (dist < planet.radius && !mouseDown) {
+                    onPlanetClick(planet);
+                }
+            });
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+                camera.x -= dx / camera.zoom;
+                camera.y -= dy / camera.zoom;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+            
+            // Planet hover info for desktop
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            let hovered = null;
+            
+            planets.forEach(planet => {
+                let px, py;
+                if (planet.distance === 0) {
+                    px = py = 0;
+                } else {
+                    px = Math.cos(planet.angle) * planet.distance;
+                    py = Math.sin(planet.angle) * planet.distance;
+                }
+                
+                const dist = Math.sqrt((worldPos.x - px) ** 2 + (worldPos.y - py) ** 2);
+                if (dist < planet.radius) {
+                    hovered = planet;
+                }
+            });
+            
+            if (hovered) {
+                document.getElementById('planetInfo').innerHTML = createDetailedInfo(hovered);
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            camera.zoom *= zoomFactor;
+            camera.zoom = Math.max(0.1, Math.min(3, camera.zoom));
+        });
+        
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initialize
+        resizeCanvas();
+        gameLoop();
+    </script>
+</body>
+>>>>>>> 411f67c (Initial commit)
+</html>
