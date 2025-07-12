@@ -90,7 +90,7 @@
         
         .info h3 {
             margin: 0 0 10px 0;
-            color: #FFD700;
+            color: #87CEEB;
             font-size: 16px;
         }
         
@@ -141,13 +141,13 @@
             text-decoration: none;
             border-radius: 5px;
             font-size: 11px;
-            transition: back7ground 0.3s;
+            transition: background 0.3s;
             padding: 8px;
             margin: 8px;
         }
         .basic-info {
             font-style: italic;
-            color: #DDA0DD;
+            color: white;
             margin-bottom: 15px;
         }
         
@@ -186,7 +186,7 @@
             {
                 name: 'Sun',
                 radius: 25,
-                color: '#FDB813',
+                color: '#fff5de',
                 distance: 0,
                 speed: 0,
                 angle: 0,
@@ -202,7 +202,7 @@
                     gravity: '274 m/s²',
                     magneticField: 'Complex dipole field with 11-year cycle',
                     wikiLink: 'https://en.wikipedia.org/wiki/Sun',
-                    d: '1.html',
+                    d: '9.html',
                     
                 }
             },
@@ -250,7 +250,7 @@
                     magneticField: 'No intrinsic magnetic field',
                     pressure: '92 bar (92 times Earth\'s pressure)',
                     wikiLink: 'https://en.wikipedia.org/wiki/Venus',
-                    c: '2.html',
+                    d: '2.html',
                 }
             },
             {
@@ -274,7 +274,7 @@
                     magneticField: 'Strong dipole field, protects from solar wind',
                     oceanCoverage: '71% of surface covered by water',
                     wikiLink: 'https://en.wikipedia.org/wiki/Earth',
-                    c: '3.html'
+                    d: '3.html'
                 },
                 moon: {
                     radius: 2,
@@ -306,7 +306,7 @@
                     moons: 'Phobos and Deimos',
                     dayLength: '24 hours 37 minutes',
                     wikiLink: 'https://en.wikipedia.org/wiki/Mars',
-                    c: '4.html'
+                    d: '4.html'
                 }
             },
             {
@@ -331,7 +331,7 @@
                     moons: '95 known moons (Io, Europa, Ganymede, Callisto)',
                     greatRedSpot: 'Giant storm larger than Earth, ongoing for 350+ years',
                     wikiLink: 'https://en.wikipedia.org/wiki/Jupiter',
-                    c: '5.html'
+                    d: '5.html'
                 }
             },
             {
@@ -357,7 +357,7 @@
                     moons: '146 known moons (Titan, Enceladus, Mimas, Iapetus)',
                     density: '0.687 g/cm³ (less dense than water)',
                     wikiLink: 'https://en.wikipedia.org/wiki/Saturn',
-                    c: '6.html'
+                    d: '6.html'
                 },
                 rings: { inner: 18, outer: 25, color: '#FAD5A5' }
             },
@@ -384,7 +384,7 @@
                     moons: '27 known moons (Miranda, Ariel, Umbriel, Titania, Oberon)',
                     rings: 'Faint ring system discovered in 1977',
                     wikiLink: 'https://en.wikipedia.org/wiki/Uranus',
-                    c: '7.html'
+                    d: '7.html'
                 }
             },
             {
@@ -410,7 +410,7 @@
                     moons: '16 known moons (Triton, Nereid, Proteus)',
                     color: 'Deep blue due to methane in atmosphere',
                     wikiLink: 'https://en.wikipedia.org/wiki/Neptune',
-                    c: '8.html'
+                    d: '8.html'
                 }
             }
         ];
@@ -460,9 +460,13 @@
             );
             
             if (planet.name === 'Sun') {
-                gradient.addColorStop(0, '#FFFF80');
-                gradient.addColorStop(0.7, planet.color);
-                gradient.addColorStop(1, '#FF8C00');
+            
+             gradient.addColorStop(0, '#ffffff');
+             gradient.addColorStop(0.7, '#ffffff');
+             gradient.addColorStop(1, '#ffffff');
+
+
+                
             } else {
                 gradient.addColorStop(0, lightenColor(planet.color, 0.3));
                 gradient.addColorStop(1, planet.color);
@@ -477,8 +481,8 @@
             if (screenRadius > 8 && planet.name !== 'Sun') {
                 ctx.strokeStyle = 'rgba(255,255,255,0.4)';
                 ctx.lineWidth = 2;
-                const rotX = screenPos.x + Math.cos(planet.rotationAngle) * screenRadius * 0.8;
-                const rotY = screenPos.y + Math.sin(planet.rotationAngle) * screenRadius * 0.8;
+                const rotX = screenPos.x + Math.cos(planet.rotationAngle) * screenRadius * 0.4;
+                const rotY = screenPos.y + Math.sin(planet.rotationAngle) * screenRadius * 0.4;
                 ctx.beginPath();
                 ctx.moveTo(screenPos.x, screenPos.y);
                 ctx.lineTo(rotX, rotY);
@@ -865,13 +869,27 @@
             
             if (details.wikiLink) {
                 html += `<a href="${details.wikiLink}" target="_blank" class="wiki-link">📖 Read more on Wikipedia</a>`;
-                html += `<a href="${details.d}" class="d">3D view</a>`;
+                html += `<a href="${details.d}" class="d" onclick="openPopup(event, this.href)">3D view</a>`;
                 
             }
             
             return html;
         }
-        
+    
+function openPopup(event, url) {
+  event.preventDefault(); 
+
+  const width = 800;
+  const height = 600;
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+
+  window.open(
+    url,
+    '_blank',
+    `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+  );
+}
         // Function to execute when planet is clicked
         function onPlanetClick(planet) {
             // Show detailed planet info
@@ -1063,5 +1081,5 @@
         gameLoop();
     </script>
 </body>
->>>>>>> 411f67c (Initial commit)
+
 </html>
